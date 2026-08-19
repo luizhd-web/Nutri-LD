@@ -84,6 +84,22 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
   .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
 }
 
+
+/* ===== LD Nutri V2 ===== */
+.v2grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.v2grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.v2pill{display:inline-block;padding:5px 8px;border-radius:999px;background:#eef2f7;font-size:12px;margin:2px 4px 2px 0}
+.v2warn{background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:10px}
+.v2good{background:#ecfdf5;border:1px solid #a7f3d0;padding:10px;border-radius:10px}
+.v2muted{color:var(--muted);font-size:12px}
+.v2section{margin-top:10px}
+.v2list{display:grid;gap:8px}
+.v2entry{border:1px solid var(--border);border-radius:10px;padding:10px}
+.v2entry .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.v2actions{display:flex;gap:8px;flex-wrap:wrap}
+.v2actions button{flex:1 1 120px}
+@media(max-width:520px){.v2grid,.v2grid3{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -96,6 +112,7 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
   <div class="tabs">
     <button class="tab active" data-tab="hoje">Hoje</button>
     <button class="tab" data-tab="semana">Semana</button>
+    <button class="tab" data-tab="checkin">Check-in</button>
     <button class="tab" data-tab="relatorios">Relatórios</button>
     <button class="tab" data-tab="ajustes">Ajustes</button>
   </div>
@@ -189,6 +206,82 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
     </div>
   </section>
 
+
+  <section id="perfil" class="hidden">
+    <div class="card">
+      <h2>Perfil nutricional</h2>
+      <div class="v2grid">
+        <label>Nome
+          <input id="profileName" placeholder="Nome">
+        </label>
+        <label>Objetivo
+          <select id="profileGoal">
+            <option value="emagrecimento">Emagrecimento</option>
+            <option value="manutencao">Manutenção</option>
+            <option value="hipertrofia">Hipertrofia</option>
+            <option value="performance">Performance</option>
+          </select>
+        </label>
+        <label>Peso atual (kg)
+          <input id="profileWeight" type="number" step="0.1" min="20" max="300">
+        </label>
+        <label>Altura (cm)
+          <input id="profileHeight" type="number" step="1" min="100" max="230">
+        </label>
+      </div>
+      <label>Preferências / observações
+        <textarea id="profilePrefs" placeholder="Ex.: prefere batata a arroz; treina à tarde; evitar refeições muito volumosas"></textarea>
+      </label>
+      <button class="primary" id="saveProfile">Salvar perfil</button>
+    </div>
+
+    <div class="card">
+      <h2>Dieta / ciclo atual</h2>
+      <div id="dietCurrent"></div>
+      <div class="v2grid">
+        <label>Nome do novo ciclo
+          <input id="dietName" placeholder="Ex.: Definição - Agosto">
+        </label>
+        <label>Data de início
+          <input id="dietStart" type="date">
+        </label>
+        <label>Calorias
+          <input id="dietKcal" type="number" min="1200" step="10">
+        </label>
+        <label>Proteína (g)
+          <input id="dietP" type="number" min="0" step="1">
+        </label>
+        <label>Carboidrato (g)
+          <input id="dietC" type="number" min="0" step="1">
+        </label>
+        <label>Gordura (g)
+          <input id="dietF" type="number" min="0" step="1">
+        </label>
+      </div>
+      <button class="primary" id="createDietCycle">Criar nova dieta</button>
+      <div class="v2muted">A dieta anterior permanece no histórico. Os relatórios usam a meta que valia em cada dia.</div>
+    </div>
+
+    <div class="card">
+      <h2>Histórico de dietas</h2>
+      <div id="dietHistory" class="v2list"></div>
+    </div>
+
+    <div class="card">
+      <h2>Refeições favoritas</h2>
+      <div class="v2grid">
+        <label>Nome
+          <input id="favMealName" placeholder="Ex.: Café padrão">
+        </label>
+        <label>Descrição
+          <input id="favMealDesc" placeholder="Ex.: 2 ovos, 1 pão francês, 1 banana">
+        </label>
+      </div>
+      <button class="secondary" id="saveFavMeal">Salvar favorita</button>
+      <div id="favMealList" class="v2list" style="margin-top:10px"></div>
+    </div>
+  </section>
+
   <section id="semana" class="hidden">
     <div class="card">
       <h2>Saldo semanal</h2>
@@ -200,6 +293,43 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
     </div>
   </section>
 
+
+
+  <section id="checkin" class="hidden">
+    <div class="card">
+      <h2>Check-in semanal</h2>
+      <div class="v2grid">
+        <label>Peso (kg)
+          <input id="checkWeight" type="number" step="0.1">
+        </label>
+        <label>Fome (1–5)
+          <input id="checkHunger" type="number" min="1" max="5">
+        </label>
+        <label>Energia (1–5)
+          <input id="checkEnergy" type="number" min="1" max="5">
+        </label>
+        <label>Sono (1–5)
+          <input id="checkSleep" type="number" min="1" max="5">
+        </label>
+        <label>Dificuldade com a dieta (1–5)
+          <input id="checkDifficulty" type="number" min="1" max="5">
+        </label>
+        <label>Treinos na semana
+          <input id="checkTraining" type="number" min="0" max="14">
+        </label>
+      </div>
+      <label>Observação
+        <textarea id="checkNote" placeholder="Como foi a semana? Fome, eventos, rotina, treino..."></textarea>
+      </label>
+      <button class="primary" id="saveCheckin">Salvar check-in</button>
+    </div>
+
+    <div class="card">
+      <h2>Evolução</h2>
+      <div id="checkinSummary"></div>
+      <div id="checkinHistory" class="v2list"></div>
+    </div>
+  </section>
 
   <section id="relatorios" class="hidden">
     <div class="card">
@@ -305,6 +435,45 @@ const state = JSON.parse(localStorage.getItem("ld_nutri_state") || "null") || {
 };
 
 if(!state.settings) state.settings={kcal:2000,p:170,c:198,f:60};
+
+if(!state.profile) state.profile={name:"",goal:"emagrecimento",weight:"",height:"",prefs:""};
+if(!state.diets) state.diets=[];
+if(!state.checkins) state.checkins=[];
+if(!state.favoriteMeals) state.favoriteMeals=[];
+if(!state.meta) state.meta={schemaVersion:2};
+
+function ensureInitialDiet(){
+  if(state.diets.length) return;
+  state.diets.push({
+    id:"D"+Date.now().toString(36),
+    name:"Plano inicial",
+    start:"2000-01-01",
+    end:null,
+    kcal:Number(state.settings.kcal)||2000,
+    p:Number(state.settings.p)||170,
+    c:Number(state.settings.c)||198,
+    f:Number(state.settings.f)||60,
+    createdAt:new Date().toISOString()
+  });
+  save();
+}
+ensureInitialDiet();
+
+function dietForDate(k=dateKey()){
+  const sorted=[...state.diets].sort((a,b)=>String(a.start).localeCompare(String(b.start)));
+  let found=sorted[0]||null;
+  for(const d of sorted){
+    if(d.start<=k && (!d.end || k<=d.end)) found=d;
+    if(d.start>k) break;
+  }
+  return found;
+}
+function baseTargetForDate(k=dateKey()){
+  const d=dietForDate(k);
+  if(d) return {kcal:Number(d.kcal)||2000,p:Number(d.p)||170,c:Number(d.c)||198,f:Number(d.f)||60,dietId:d.id,dietName:d.name};
+  return {kcal:Number(state.settings.kcal)||2000,p:Number(state.settings.p)||170,c:Number(state.settings.c)||198,f:Number(state.settings.f)||60,dietId:null,dietName:"Plano"};
+}
+
 if(state.settings.exerciseCompPct==null) state.settings.exerciseCompPct=60;
 if(!state.days) state.days={};
 if(!state.adjustments) state.adjustments={};
@@ -334,13 +503,24 @@ function ensureDay(k=dateKey()){
   return state.days[k];
 }
 function targetFor(k=dateKey()){
-  const a=state.adjustments[k]||0;
+  const base=baseTargetForDate(k);
+  const a=Number(state.adjustments[k])||0;
   const exerciseCredit=exerciseCreditFor(k);
+
+  // Limita mudanças agudas: no máximo ±10% da meta-base por ajustes automáticos.
+  const maxSwing=Math.max(100,base.kcal*0.10);
+  const safeAdjustment=Math.max(-maxSwing,Math.min(maxSwing,a));
+
+  // Crédito do exercício também é limitado para evitar "comer de volta" o relógio.
+  const maxExerciseCredit=Math.max(100,base.kcal*0.12);
+  const safeExerciseCredit=Math.min(exerciseCredit,maxExerciseCredit);
+
   return {
-    ...state.settings,
-    kcal:Math.max(1700,state.settings.kcal+a+exerciseCredit),
-    adjustment:a,
-    exerciseCredit
+    ...base,
+    kcal:Math.max(1400,base.kcal+safeAdjustment+safeExerciseCredit),
+    adjustment:safeAdjustment,
+    rawAdjustment:a,
+    exerciseCredit:safeExerciseCredit
   };
 }
 function totals(k=dateKey()){
@@ -474,6 +654,45 @@ function registerVoiceInput(text){
   return {type:"meal",ok:registerSpokenMeal(text)};
 }
 
+
+function dayCompleteness(k=dateKey()){
+  const d=state.days[k];
+  if(!d) return {status:"sem_registro",score:0};
+  if(d.closed) return {status:"fechado",score:100};
+  const entries=Array.isArray(d.entries)?d.entries:[];
+  const hours=new Date().getHours();
+  const expected=k===dateKey() ? (hours<10?1:hours<14?2:hours<18?3:4) : 4;
+  const score=Math.min(95,Math.round((entries.length/Math.max(1,expected))*100));
+  if(entries.length===0) return {status:"sem_registro",score:0};
+  if(score<70) return {status:"incompleto",score};
+  return {status:"parcial",score};
+}
+function adherenceForDay(k=dateKey()){
+  const c=dayCompleteness(k);
+  if(c.status==="sem_registro" || c.status==="incompleto") return {valid:false,label:"Dia incompleto"};
+  const t=targetFor(k), x=totals(k);
+  const diff=x.kcal-t.kcal;
+  const band=Math.max(150,t.kcal*0.10);
+  return {valid:true,diff,within:Math.abs(diff)<=band,label:Math.abs(diff)<=band?"Dentro da faixa":diff>0?"Acima da faixa":"Abaixo da faixa"};
+}
+function trendAdjustmentRecommendation(){
+  const keys=[];
+  for(let i=1;i<=7;i++){ const d=new Date(); d.setDate(d.getDate()-i); keys.push(dateKey(d)); }
+  const vals=keys.map(k=>({k,a:adherenceForDay(k),t:targetFor(k),x:totals(k)})).filter(z=>z.a.valid);
+  if(vals.length<4) return {ready:false,text:"Ainda não há dias completos suficientes para ajuste por tendência."};
+  const avgDiff=vals.reduce((s,z)=>s+(z.x.kcal-z.t.kcal),0)/vals.length;
+  const base=baseTargetForDate();
+  let delta=0;
+  if(avgDiff>250) delta=-100;
+  else if(avgDiff<-350) delta=80;
+  return {
+    ready:true,avgDiff,delta,
+    text:delta===0
+      ?`Tendência de 7 dias está estável (${round(avgDiff)} kcal/dia em relação à meta).`
+      :`Tendência de 7 dias sugere ajuste conservador de ${delta>0?"+":""}${delta} kcal/dia.`
+  };
+}
+
 function remainingToday(){
   const t=targetFor(), x=totals();
   return {
@@ -496,32 +715,33 @@ function buildRecalcPlan(){
   const rem=remainingToday();
   const slots=remainingMealSlots();
   const n=Math.max(1,slots.length);
-  const kcalEach=rem.kcal/n;
+  const target=targetFor();
+  const comp=dayCompleteness();
+  const trend=trendAdjustmentRecommendation();
+
+  const floorKcal=Math.min(350,Math.max(220,target.kcal*0.12));
+  const rawEach=rem.kcal/n;
+  const kcalEach=Math.max(Math.min(rawEach,700), Math.min(floorKcal, rem.kcal/n || floorKcal));
   const pEach=rem.p/n;
   const cEach=rem.c/n;
   const fEach=rem.f/n;
 
-  const suggestions=slots.map((slot,i)=>{
+  const suggestions=slots.map((slot)=>{
     let idea="";
-    if(slot==="Café da manhã"){
-      idea="Ovos + fruta + aveia ou pão, ajustando a quantidade à meta.";
-    }else if(slot==="Almoço"){
-      idea="Frango ou outra proteína magra + arroz/batata + feijão + vegetais.";
-    }else if(slot==="Lanche"){
-      idea="Iogurte proteico ou ovos/queijo + fruta; complemente carboidrato se necessário.";
-    }else{
-      idea="Proteína magra + batata/arroz + vegetais; reduza gordura adicionada se ela já estiver alta.";
-    }
+    if(slot==="Café da manhã") idea="Proteína + fruta + fonte de carboidrato. Evite concentrar toda a compensação em uma refeição.";
+    else if(slot==="Almoço") idea="Proteína magra + arroz/batata + feijão + vegetais.";
+    else if(slot==="Lanche") idea="Iogurte proteico, ovos ou queijo + fruta; ajuste carboidrato conforme o restante do dia.";
+    else idea="Proteína + vegetais + carboidrato conforme a meta restante. Evite cortes extremos no jantar.";
     return `<div class="entry">
       <div class="top"><b>${slot}</b><span class="badge">~${round(kcalEach)} kcal</span></div>
-      <div class="small">Alvo aproximado desta refeição: P ${round(pEach)} g • C ${round(cEach)} g • G ${round(fEach)} g</div>
+      <div class="small">Alvo aproximado: P ${round(pEach)} g • C ${round(cEach)} g • G ${round(fEach)} g</div>
       <div class="small" style="margin-top:4px">${idea}</div>
     </div>`;
   }).join("");
 
   const head=`<div class="notice" style="margin-bottom:10px">
-    Restante do dia: <b>${round(rem.kcal)} kcal</b> • 
-    P <b>${round(rem.p)} g</b> • C <b>${round(rem.c)} g</b> • G <b>${round(rem.f)} g</b>.
+    Restante estimado: <b>${round(rem.kcal)} kcal</b> • P <b>${round(rem.p)} g</b> • C <b>${round(rem.c)} g</b> • G <b>${round(rem.f)} g</b>.
+    <div class="small" style="margin-top:6px">Status do dia: ${comp.status.replace("_"," ")} (${comp.score}%). ${trend.text}</div>
   </div>`;
 
   document.getElementById("recalcPlan").innerHTML=head+suggestions;
@@ -537,6 +757,17 @@ function registerSpokenMeal(text){
       "Ouvi: “"+clean+"”, mas não reconheci alimentos suficientes. Revise o texto ou use o lançamento manual.";
     return false;
   }
+
+  // Se a frase parece complexa e poucos itens foram reconhecidos, não grava automaticamente.
+  const nt=normalize(clean);
+  const complex=/molho|prato|porcao|receita|lasanha|pizza|hamburg|sanduiche|risoto|massa|macarrao|sopa|torta|bolo/.test(nt);
+  if(complex && r.found.length<2){
+    document.getElementById("mealText").value=clean;
+    document.getElementById("parseInfo").textContent=
+      "Reconhecimento com baixa confiança. Confira a descrição e toque em “Registrar texto e recalcular”.";
+    return false;
+  }
+
   addEntry(clean,r.total,"voice");
   document.getElementById("mealText").value="";
   document.getElementById("parseInfo").textContent=
@@ -587,13 +818,144 @@ function renderWeek(){
     const x=totals(k), t=targetFor(k); sum+=x.kcal; target+=t.kcal;
     const diff=x.kcal-t.kcal;
     const ex=exerciseTotalFor(k);
+    const comp=dayCompleteness(k);
     return `<div class="entry"><div class="top"><b>${brDate(k)}</b><span class="badge">${round(x.kcal)} kcal</span></div>
-      <div class="small">Meta ajustada ${round(t.kcal)} • exercício ${round(ex)} kcal • saldo ${diff>0?"+":""}${round(diff)} kcal</div></div>`;
+      <div class="small">Meta ajustada ${round(t.kcal)} • exercício ${round(ex)} kcal • ${comp.status==="fechado"||comp.score>=70?`saldo ${diff>0?"+":""}${round(diff)} kcal`:`dia ${comp.status.replace("_"," ")}`}</div></div>`;
   }).join("");
   const delta=sum-target;
   document.getElementById("weekSummary").innerHTML=`<div class="metric"><span>Consumido / meta ajustada</span><b>${round(sum)} / ${round(target)} kcal</b>
   <div class="${Math.abs(delta)<300?"good":delta>0?"warn":"good"}">Saldo: ${delta>0?"+":""}${round(delta)} kcal</div></div>`;
   document.getElementById("weekList").innerHTML=rows;
+}
+
+
+function uid2(prefix="X"){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+function renderProfileV2(){
+  const p=state.profile||{};
+  const byId=id=>document.getElementById(id);
+  if(byId("profileName")) byId("profileName").value=p.name||"";
+  if(byId("profileGoal")) byId("profileGoal").value=p.goal||"emagrecimento";
+  if(byId("profileWeight")) byId("profileWeight").value=p.weight||"";
+  if(byId("profileHeight")) byId("profileHeight").value=p.height||"";
+  if(byId("profilePrefs")) byId("profilePrefs").value=p.prefs||"";
+
+  const current=dietForDate();
+  if(byId("dietCurrent")){
+    byId("dietCurrent").innerHTML=current
+      ?`<div class="v2good"><b>${current.name}</b><div class="small">${current.start} • ${current.kcal} kcal • P ${current.p} g • C ${current.c} g • G ${current.f} g</div></div>`
+      :`<div class="v2warn">Nenhuma dieta ativa.</div>`;
+  }
+  if(current){
+    if(byId("dietKcal")) byId("dietKcal").value=current.kcal;
+    if(byId("dietP")) byId("dietP").value=current.p;
+    if(byId("dietC")) byId("dietC").value=current.c;
+    if(byId("dietF")) byId("dietF").value=current.f;
+  }
+  if(byId("dietStart") && !byId("dietStart").value) byId("dietStart").value=dateKey();
+
+  if(byId("dietHistory")){
+    const list=[...state.diets].sort((a,b)=>String(b.start).localeCompare(String(a.start)));
+    byId("dietHistory").innerHTML=list.map(d=>`<div class="v2entry">
+      <div class="top"><b>${d.name}</b><span class="v2pill">${d.start}${d.end?" → "+d.end:" → atual"}</span></div>
+      <div class="small">${d.kcal} kcal • P ${d.p} g • C ${d.c} g • G ${d.f} g</div>
+    </div>`).join("");
+  }
+
+  if(byId("favMealList")){
+    byId("favMealList").innerHTML=state.favoriteMeals.length?state.favoriteMeals.map(f=>`<div class="v2entry">
+      <div class="top"><b>${f.name}</b><button class="secondary" onclick="useFavMeal('${f.id}')">Usar</button></div>
+      <div class="small">${f.desc}</div>
+    </div>`).join(""):`<div class="small">Nenhuma refeição favorita.</div>`;
+  }
+}
+
+window.useFavMeal=function(id){
+  const f=state.favoriteMeals.find(x=>x.id===id); if(!f)return;
+  const ta=document.getElementById("mealText"); if(ta) ta.value=f.desc;
+  const hojeBtn=[...document.querySelectorAll(".tab")].find(b=>b.dataset.tab==="hoje");
+  if(hojeBtn) hojeBtn.click();
+};
+
+function saveProfileV2(){
+  state.profile={
+    name:document.getElementById("profileName")?.value.trim()||"",
+    goal:document.getElementById("profileGoal")?.value||"emagrecimento",
+    weight:parseFloat(document.getElementById("profileWeight")?.value)||"",
+    height:parseFloat(document.getElementById("profileHeight")?.value)||"",
+    prefs:document.getElementById("profilePrefs")?.value.trim()||""
+  };
+  save(); renderProfileV2();
+}
+function createDietCycleV2(){
+  const start=document.getElementById("dietStart")?.value||dateKey();
+  const kcal=parseFloat(document.getElementById("dietKcal")?.value)||0;
+  const p=parseFloat(document.getElementById("dietP")?.value)||0;
+  const c=parseFloat(document.getElementById("dietC")?.value)||0;
+  const f=parseFloat(document.getElementById("dietF")?.value)||0;
+  const name=document.getElementById("dietName")?.value.trim()||("Dieta "+start);
+  if(kcal<1200) return alert("Informe uma meta calórica válida.");
+
+  // Fecha o ciclo anterior no dia anterior ao novo.
+  const previous=[...state.diets].filter(d=>d.start<start).sort((a,b)=>String(b.start).localeCompare(String(a.start)))[0];
+  if(previous){
+    const dt=parseLocalDate(start); dt.setDate(dt.getDate()-1);
+    previous.end=localDateKey(dt);
+  }
+  // Evita dois ciclos começando na mesma data.
+  state.diets=state.diets.filter(d=>d.start!==start);
+  state.diets.push({id:uid2("D"),name,start,end:null,kcal,p,c,f,createdAt:new Date().toISOString()});
+  state.settings={...state.settings,kcal,p,c,f};
+  save(); render(); renderProfileV2(); renderReport();
+  alert("Nova dieta criada. O histórico anterior foi preservado.");
+}
+function saveFavMealV2(){
+  const name=document.getElementById("favMealName")?.value.trim();
+  const desc=document.getElementById("favMealDesc")?.value.trim();
+  if(!name||!desc) return;
+  state.favoriteMeals.push({id:uid2("F"),name,desc});
+  save();
+  document.getElementById("favMealName").value="";
+  document.getElementById("favMealDesc").value="";
+  renderProfileV2();
+}
+
+function renderCheckinsV2(){
+  const el=document.getElementById("checkinHistory");
+  if(!el)return;
+  const list=[...state.checkins].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  el.innerHTML=list.length?list.map(c=>`<div class="v2entry">
+    <div class="top"><b>${fmtBR(c.date)}</b><span class="v2pill">${c.weight||"—"} kg</span></div>
+    <div class="small">Fome ${c.hunger||"—"}/5 • Energia ${c.energy||"—"}/5 • Sono ${c.sleep||"—"}/5 • Dificuldade ${c.difficulty||"—"}/5 • Treinos ${c.training??"—"}</div>
+    ${c.note?`<div class="small" style="margin-top:4px">${c.note}</div>`:""}
+  </div>`).join(""):`<div class="small">Nenhum check-in salvo.</div>`;
+
+  const s=document.getElementById("checkinSummary");
+  if(s){
+    if(list.length<2) s.innerHTML='<div class="notice">Salve pelo menos dois check-ins para ver tendência de peso.</div>';
+    else{
+      const latest=list[0], oldest=list[list.length-1];
+      const delta=(Number(latest.weight)||0)-(Number(oldest.weight)||0);
+      s.innerHTML=`<div class="notice">Variação entre o primeiro e o último check-in: <b>${delta>0?"+":""}${delta.toFixed(1)} kg</b>.</div>`;
+    }
+  }
+}
+function saveCheckinV2(){
+  const c={
+    id:uid2("C"),date:dateKey(),
+    weight:parseFloat(document.getElementById("checkWeight")?.value)||"",
+    hunger:parseInt(document.getElementById("checkHunger")?.value)||"",
+    energy:parseInt(document.getElementById("checkEnergy")?.value)||"",
+    sleep:parseInt(document.getElementById("checkSleep")?.value)||"",
+    difficulty:parseInt(document.getElementById("checkDifficulty")?.value)||"",
+    training:parseInt(document.getElementById("checkTraining")?.value)||0,
+    note:document.getElementById("checkNote")?.value.trim()||""
+  };
+  state.checkins=state.checkins.filter(x=>x.date!==c.date);
+  state.checkins.push(c);
+  if(c.weight) state.profile.weight=c.weight;
+  save(); renderCheckinsV2(); renderProfileV2();
+  alert("Check-in salvo.");
 }
 
 let currentReport=null;
@@ -637,9 +999,10 @@ function dayDataForReport(k){
   const compPct=Math.max(0,Math.min(100,Number(state.settings.exerciseCompPct)||0));
   const credit=exercise*(compPct/100);
   const adjustment=Number(state.adjustments[k])||0;
-  const target=Math.max(1700,(Number(state.settings.kcal)||2000)+adjustment+credit);
+  const target=targetFor(k).kcal;
+  const completeness=dayCompleteness(k);
   const registered=entries.length>0 || exercise>0 || Boolean(d.closed);
-  return {k,total,strength,cardio,exercise,credit,adjustment,target,registered,closed:Boolean(d.closed)};
+  return {k,total,strength,cardio,exercise,credit,adjustment,target,registered,closed:Boolean(d.closed),completeness,dietName:targetFor(k).dietName};
 }
 function reportDays(period,refKey){
   const r=reportRange(period,refKey), rows=[];
@@ -659,7 +1022,7 @@ function fmtLongRange(start,end,period){
 }
 function buildReport(period="week",refKey=dateKey()){
   const pack=reportDays(period,refKey);
-  const registered=pack.rows.filter(r=>r.registered);
+  const registered=pack.rows.filter(r=>r.registered && (r.closed || r.completeness.score>=70));
   const divisor=Math.max(1,registered.length);
   const sums=registered.reduce((s,r)=>({
     consumed:s.consumed+r.total.kcal,
@@ -695,7 +1058,7 @@ function reportInterpretation(r){
   const exShare=r.sums.exercise>0?` O exercício somou ${round(r.sums.exercise)} kcal (${round(r.sums.strength)} de musculação e ${round(r.sums.cardio)} de aeróbico).`:" Não houve gasto de exercício registrado.";
   const adherence=` ${r.within} de ${r.daysRegistered} dias registrados ficaram dentro da faixa operacional de ±10% ou 150 kcal da meta ajustada.`;
   const macro=` Médias diárias registradas: proteína ${round(r.avg.p)} g, carboidratos ${round(r.avg.c)} g e gorduras ${round(r.avg.f)} g.`;
-  return `No período, o consumo médio foi ${round(r.avg.consumed)} kcal/dia para uma meta ajustada média de ${round(r.avg.target)} kcal/dia. O saldo acumulado ficou ${direction} da meta em ${abs} kcal.${exShare}${adherence}${macro}`;
+  return `Considerando apenas dias com registro suficientemente completo, o consumo médio foi ${round(r.avg.consumed)} kcal/dia para uma meta ajustada média de ${round(r.avg.target)} kcal/dia. O saldo acumulado ficou ${direction} da meta em ${abs} kcal.${exShare}${adherence}${macro}`;
 }
 function renderReport(){
   const period=document.getElementById("reportPeriod")?.value||"week";
@@ -707,7 +1070,7 @@ function renderReport(){
     (period==="month"?"Relatório mensal — ":"Relatório semanal — ")+fmtLongRange(r.range.start,r.range.end,period);
 
   const m=[
-    ["Dias registrados",r.daysRegistered],
+    ["Dias válidos",r.daysRegistered],
     ["Consumido",`${round(r.sums.consumed)} kcal`],
     ["Meta ajustada",`${round(r.sums.target)} kcal`],
     ["Saldo acumulado",`${r.balance>0?"+":""}${round(r.balance)} kcal`],
@@ -737,10 +1100,12 @@ function renderReport(){
       <td>${x.registered?round(x.total.p):"—"}</td>
       <td>${x.registered?round(x.total.c):"—"}</td>
       <td>${x.registered?round(x.total.f):"—"}</td>
+      <td>${x.registered?x.completeness.score+"%":"—"}</td>
+      <td>${x.registered?(x.dietName||"—"):"—"}</td>
     </tr>`;
   }).join("");
   document.getElementById("reportDaily").innerHTML=
-    `<table><thead><tr><th>Dia</th><th>Cons.</th><th>Meta</th><th>Saldo</th><th>Muscul.</th><th>Aerób.</th><th>P</th><th>C</th><th>G</th></tr></thead><tbody>${rows}</tbody></table>`;
+    `<table><thead><tr><th>Dia</th><th>Cons.</th><th>Meta</th><th>Saldo</th><th>Muscul.</th><th>Aerób.</th><th>P</th><th>C</th><th>G</th><th>Complet.</th><th>Dieta</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function reportText(r){
   const label=r.period==="month"?"RELATÓRIO MENSAL":"RELATÓRIO SEMANAL";
@@ -763,11 +1128,11 @@ Dias dentro da faixa: ${r.within}/${r.daysRegistered}
 ${reportInterpretation(r)}`;
 }
 function reportCsv(r){
-  const lines=[["data","consumido_kcal","meta_ajustada_kcal","saldo_kcal","musculacao_kcal","aerobico_kcal","exercicio_total_kcal","proteina_g","carbo_g","gordura_g","fechado"]];
+  const lines=[["data","consumido_kcal","meta_ajustada_kcal","saldo_kcal","musculacao_kcal","aerobico_kcal","exercicio_total_kcal","proteina_g","carbo_g","gordura_g","completude_pct","dieta","fechado"]];
   r.rows.filter(x=>x.registered).forEach(x=>lines.push([
     x.k,round(x.total.kcal),round(x.target),round(x.total.kcal-x.target),
     round(x.strength),round(x.cardio),round(x.exercise),
-    round(x.total.p),round(x.total.c),round(x.total.f),x.closed?"sim":"nao"
+    round(x.total.p),round(x.total.c),round(x.total.f),x.completeness.score,x.dietName||"",x.closed?"sim":"nao"
   ]));
   return lines.map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
 }
@@ -933,25 +1298,19 @@ document.querySelectorAll(".quick button").forEach(b=>b.onclick=()=>{
   const ta=document.getElementById("mealText"); ta.value+=(ta.value?", ":"")+b.dataset.q;
 });
 document.getElementById("closeDay").onclick=()=>{
-  const k=dateKey(), d=ensureDay(k), x=totals(k), t=targetFor(k);
+  const k=dateKey(), d=ensureDay(k);
   d.closed=true;
-  const diff=x.kcal-t.kcal;
-  // limpa futuros ajustes gerados automaticamente próximos 4 dias apenas se zero? preserva existentes.
-  if(diff>150){
-    // Compensa só parte do excesso: 40%, no máx 450 kcal, distribuído com limite de -150/dia.
-    let remaining=Math.min(diff*0.40,450);
-    for(let i=1;i<=4 && remaining>1;i++){
-      let dt=new Date();dt.setDate(dt.getDate()+i);let dk=dateKey(dt);
-      let cut=Math.min(150,remaining);
-      state.adjustments[dk]=(state.adjustments[dk]||0)-cut; remaining-=cut;
+
+  // Ajuste futuro só por tendência de vários dias completos, nunca por um único dia.
+  const trend=trendAdjustmentRecommendation();
+  if(trend.ready && trend.delta!==0){
+    for(let i=1;i<=3;i++){
+      let dt=new Date(); dt.setDate(dt.getDate()+i); let dk=dateKey(dt);
+      state.adjustments[dk]=trend.delta;
     }
-  } else if(diff<-300){
-    // Déficit grande: devolve parcialmente energia, sem compensar integralmente.
-    let dt=new Date();dt.setDate(dt.getDate()+1);let dk=dateKey(dt);
-    state.adjustments[dk]=(state.adjustments[dk]||0)+Math.min(100,(-diff)*0.25);
   }
   save();render();
-  alert("Dia fechado. O gasto do treino foi considerado e as próximas metas foram recalculadas de forma conservadora.");
+  alert("Dia fechado. Ajustes futuros, quando necessários, usam tendência de vários dias completos.");
 }
 document.getElementById("saveSettings").onclick=()=>{
   state.settings={
@@ -962,6 +1321,16 @@ document.getElementById("saveSettings").onclick=()=>{
     exerciseCompPct:Math.max(0,Math.min(100,parseFloat(document.getElementById("setExerciseComp")?.value)||0))
   };save();render();
 }
+
+
+const saveProfileBtn=document.getElementById("saveProfile");
+if(saveProfileBtn) saveProfileBtn.onclick=saveProfileV2;
+const createDietCycleBtn=document.getElementById("createDietCycle");
+if(createDietCycleBtn) createDietCycleBtn.onclick=createDietCycleV2;
+const saveFavMealBtn=document.getElementById("saveFavMeal");
+if(saveFavMealBtn) saveFavMealBtn.onclick=saveFavMealV2;
+const saveCheckinBtn=document.getElementById("saveCheckin");
+if(saveCheckinBtn) saveCheckinBtn.onclick=saveCheckinV2;
 
 const reportDateEl=document.getElementById("reportDate");
 if(reportDateEl) reportDateEl.value=dateKey();
@@ -982,10 +1351,14 @@ document.getElementById("resetAll").onclick=()=>{
 }
 document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
-  ["hoje","semana","relatorios","ajustes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==btn.dataset.tab));
+  ["hoje","perfil","semana","checkin","relatorios","ajustes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==btn.dataset.tab));
   if(btn.dataset.tab==="relatorios") renderReport();
+  if(btn.dataset.tab==="perfil") renderProfileV2();
+  if(btn.dataset.tab==="checkin") renderCheckinsV2();
 });
 render();
+renderProfileV2();
+renderCheckinsV2();
 renderReport();
 </script>
 </body>
