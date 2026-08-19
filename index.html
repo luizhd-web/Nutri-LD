@@ -52,6 +52,38 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
 .voiceStatus{font-size:12px;color:var(--muted);line-height:1.25}
 .footer{font-size:11px;color:var(--muted);line-height:1.45;margin-top:16px}
 @media (min-width:560px){.grid{grid-template-columns:repeat(4,1fr)}}
+
+.exerciseGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.exerciseSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.exerciseSummary .metric{padding:10px}
+.voiceHint{margin-top:8px;font-size:12px;color:var(--muted)}
+@media(max-width:520px){
+  .exerciseGrid,.exerciseSummary{grid-template-columns:1fr}
+}
+
+
+.reportControls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.reportGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.reportTable{overflow-x:auto}
+.reportTable table{width:100%;border-collapse:collapse;font-size:13px}
+.reportTable th,.reportTable td{padding:9px 7px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+.reportTable th:first-child,.reportTable td:first-child{text-align:left}
+.reportInterpretation{line-height:1.45}
+.reportActions{display:flex;gap:8px;flex-wrap:wrap}
+.reportActions button{flex:1 1 140px}
+@media(max-width:520px){
+  .reportControls,.reportGrid{grid-template-columns:1fr}
+}
+
+
+@media print{
+  .tabs,#hoje,#semana,#ajustes,.footer,#relatorios .card:first-child,#relatorios .card:last-child{display:none!important}
+  #relatorios{display:block!important}
+  body{background:#fff}
+  .wrap{max-width:none;padding:0}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
+}
+
 </style>
 </head>
 <body>
@@ -64,6 +96,7 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
   <div class="tabs">
     <button class="tab active" data-tab="hoje">Hoje</button>
     <button class="tab" data-tab="semana">Semana</button>
+    <button class="tab" data-tab="relatorios">Relatórios</button>
     <button class="tab" data-tab="ajustes">Ajustes</button>
   </div>
 
@@ -77,6 +110,37 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
         <div class="metric"><span>Gordura</span><b id="fatVal">0 / 60 g</b><div class="progress"><i id="fatBar"></i></div></div>
       </div>
       <div id="todayAdvice" class="notice" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Plano recalculado de hoje</h2>
+      <div id="recalcPlan"></div>
+      <div class="small" style="margin-top:10px">
+        O plano abaixo se adapta ao que já foi registrado hoje. As porções são sugestões estimadas e podem ser ajustadas.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Gasto calórico do treino</h2>
+      <div class="exerciseGrid">
+        <label>Musculação (kcal)
+          <input id="exStrength" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex.: 220">
+        </label>
+        <label>Aeróbico / cardio (kcal)
+          <input id="exCardio" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex.: 350">
+        </label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="saveExercise">Salvar gasto e recalcular</button>
+        <button type="button" class="secondary" id="exerciseVoiceBtn">🎙️ Falar gasto</button>
+      </div>
+      <div class="voiceHint">Ex.: “gastei 250 calorias na musculação e 300 no aeróbico”.</div>
+      <div id="exerciseInfo" class="small" style="margin-top:8px"></div>
+      <div class="exerciseSummary">
+        <div class="metric"><span>Gasto total</span><b id="exerciseTotal">0 kcal</b></div>
+        <div class="metric"><span>Crédito na meta</span><b id="exerciseCredit">0 kcal</b></div>
+        <div class="metric"><span>Meta ajustada</span><b id="adjustedTarget">0 kcal</b></div>
+      </div>
     </div>
 
     <div class="card">
@@ -97,7 +161,7 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
         <button data-q="120 g de arroz">Arroz 120 g</button>
         <button data-q="80 g de feijão">Feijão 80 g</button>
       </div>
-      <button class="primary" id="estimateBtn">Estimar e adicionar</button>
+      <button class="primary" id="estimateBtn">Registrar texto e recalcular</button>
       <div id="parseInfo" class="small" style="margin-top:8px"></div>
     </div>
 
@@ -136,6 +200,53 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
     </div>
   </section>
 
+
+  <section id="relatorios" class="hidden">
+    <div class="card">
+      <h2>Relatório semanal ou mensal</h2>
+      <div class="reportControls">
+        <label>Período
+          <select id="reportPeriod">
+            <option value="week">Semanal</option>
+            <option value="month">Mensal</option>
+          </select>
+        </label>
+        <label>Data de referência
+          <input id="reportDate" type="date">
+        </label>
+      </div>
+      <button class="primary" id="generateReport">Gerar relatório</button>
+      <div class="small" style="margin-top:8px">
+        O saldo abaixo compara o consumo com a meta ajustada do app. É um indicador de acompanhamento, não uma medição direta do déficit fisiológico.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 id="reportTitle">Resumo do período</h2>
+      <div class="reportGrid" id="reportMetrics"></div>
+    </div>
+
+    <div class="card">
+      <h2>Leitura automática</h2>
+      <div id="reportInterpretation" class="notice reportInterpretation"></div>
+    </div>
+
+    <div class="card">
+      <h2>Detalhamento diário</h2>
+      <div id="reportDaily" class="reportTable"></div>
+    </div>
+
+    <div class="card">
+      <h2>Exportar / compartilhar</h2>
+      <div class="reportActions">
+        <button class="secondary" id="shareReport">Compartilhar resumo</button>
+        <button class="secondary" id="downloadReport">Baixar CSV</button>
+        <button class="secondary" id="printReport">Imprimir / Salvar PDF</button>
+      </div>
+      <div id="reportExportInfo" class="small" style="margin-top:8px"></div>
+    </div>
+  </section>
+
   <section id="ajustes" class="hidden">
     <div class="card">
       <h2>Metas</h2>
@@ -147,6 +258,9 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
         <div><label>Carboidratos</label><input id="setCarb" type="number"></div>
         <div><label>Gorduras</label><input id="setFat" type="number"></div>
       </div>
+      <label>Compensação do exercício (%)
+        <input id="setExerciseComp" type="number" min="0" max="100" step="5" value="60">
+      </label>
       <button class="primary" id="saveSettings">Salvar metas</button>
     </div>
     <div class="card">
@@ -190,6 +304,28 @@ const state = JSON.parse(localStorage.getItem("ld_nutri_state") || "null") || {
   adjustments:{}
 };
 
+if(!state.settings) state.settings={kcal:2000,p:170,c:198,f:60};
+if(state.settings.exerciseCompPct==null) state.settings.exerciseCompPct=60;
+if(!state.days) state.days={};
+if(!state.adjustments) state.adjustments={};
+
+function ensureExercise(k=dateKey()){
+  const d=ensureDay(k);
+  if(!d.exercise) d.exercise={strength:0,cardio:0};
+  d.exercise.strength=Number(d.exercise.strength)||0;
+  d.exercise.cardio=Number(d.exercise.cardio)||0;
+  return d.exercise;
+}
+function exerciseTotalFor(k=dateKey()){
+  const e=ensureExercise(k);
+  return (Number(e.strength)||0)+(Number(e.cardio)||0);
+}
+function exerciseCreditFor(k=dateKey()){
+  const pct=Math.max(0,Math.min(100,Number(state.settings.exerciseCompPct)||0));
+  return exerciseTotalFor(k)*(pct/100);
+}
+
+
 function save(){localStorage.setItem("ld_nutri_state", JSON.stringify(state))}
 function dateKey(d=new Date()){return d.toISOString().slice(0,10)}
 function brDate(k){return new Date(k+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"})}
@@ -199,7 +335,13 @@ function ensureDay(k=dateKey()){
 }
 function targetFor(k=dateKey()){
   const a=state.adjustments[k]||0;
-  return {...state.settings,kcal:Math.max(1700,state.settings.kcal+a),adjustment:a};
+  const exerciseCredit=exerciseCreditFor(k);
+  return {
+    ...state.settings,
+    kcal:Math.max(1700,state.settings.kcal+a+exerciseCredit),
+    adjustment:a,
+    exerciseCredit
+  };
 }
 function totals(k=dateKey()){
   const d=ensureDay(k);
@@ -251,6 +393,157 @@ function addEntry(desc,macros,source){
   d.entries.push({id:Date.now()+Math.random(),desc,source,...macros,ts:new Date().toISOString()});
   save(); render();
 }
+
+
+function renderExercise(){
+  const e=ensureExercise();
+  const t=targetFor();
+  const total=exerciseTotalFor();
+  const credit=exerciseCreditFor();
+  const s=document.getElementById("exStrength");
+  const c=document.getElementById("exCardio");
+  if(s && document.activeElement!==s) s.value=e.strength||"";
+  if(c && document.activeElement!==c) c.value=e.cardio||"";
+  const totalEl=document.getElementById("exerciseTotal");
+  const creditEl=document.getElementById("exerciseCredit");
+  const targetEl=document.getElementById("adjustedTarget");
+  if(totalEl) totalEl.textContent=round(total)+" kcal";
+  if(creditEl) creditEl.textContent=round(credit)+" kcal";
+  if(targetEl) targetEl.textContent=round(t.kcal)+" kcal";
+}
+
+function saveExerciseValues(strength,cardio,source="manual"){
+  const e=ensureExercise();
+  if(strength!=null && !Number.isNaN(Number(strength))) e.strength=Math.max(0,Number(strength));
+  if(cardio!=null && !Number.isNaN(Number(cardio))) e.cardio=Math.max(0,Number(cardio));
+  save();
+  render();
+  const info=document.getElementById("exerciseInfo");
+  if(info){
+    info.textContent=(source==="voice"?"Registrado por voz. ":"")+
+      "Gasto total "+round(exerciseTotalFor())+" kcal; "+
+      round(exerciseCreditFor())+" kcal aplicadas à meta de hoje.";
+  }
+}
+
+function parseExerciseVoice(text){
+  const nt=normalize(text);
+  const hasExercise=/muscul|aerob|cardio|esteira|bike|bicic|elipt|corrida|caminh|treino/.test(nt);
+  const hasEnergy=/kcal|caloria|gastei|gasto|queimei/.test(nt);
+  if(!hasExercise || !hasEnergy) return null;
+
+  function nearbyNumber(keywordRegex){
+    const m=keywordRegex.exec(nt);
+    if(!m) return null;
+    const idx=m.index;
+    const before=nt.slice(Math.max(0,idx-35),idx);
+    const after=nt.slice(idx,Math.min(nt.length,idx+45));
+    let nums=[...before.matchAll(/(\d+(?:[.,]\d+)?)/g)];
+    if(nums.length) return parseFloat(nums[nums.length-1][1].replace(",","."));
+    let a=after.match(/(?:musculacao|muscul|aerobico|aerob|cardio|esteira|bike|bicicleta|eliptico|corrida|caminhada)[^\d]{0,18}(\d+(?:[.,]\d+)?)/);
+    return a?parseFloat(a[1].replace(",",".")):null;
+  }
+
+  let strength=nearbyNumber(/musculacao|muscul/);
+  let cardio=nearbyNumber(/aerobico|aerob|cardio|esteira|bike|bicicleta|eliptico|corrida|caminhada/);
+
+  // Fallback for phrases such as "250 na musculação e 300 no aeróbico"
+  const pairs=[...nt.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:kcal|calorias?)?\s*(?:na|no|de|em)?\s*(musculacao|muscul|aerobico|aerob|cardio|esteira|bike|bicicleta|eliptico|corrida|caminhada)/g)];
+  for(const p of pairs){
+    const n=parseFloat(p[1].replace(",","."));
+    const kind=p[2];
+    if(/muscul/.test(kind)) strength=n;
+    else cardio=n;
+  }
+
+  if(strength==null && cardio==null) return null;
+  return {strength,cardio};
+}
+
+function registerVoiceInput(text){
+  const ex=parseExerciseVoice(text);
+  if(ex){
+    const current=ensureExercise();
+    saveExerciseValues(
+      ex.strength==null?current.strength:ex.strength,
+      ex.cardio==null?current.cardio:ex.cardio,
+      "voice"
+    );
+    return {type:"exercise",ok:true};
+  }
+  return {type:"meal",ok:registerSpokenMeal(text)};
+}
+
+function remainingToday(){
+  const t=targetFor(), x=totals();
+  return {
+    kcal:Math.max(0,t.kcal-x.kcal),
+    p:Math.max(0,t.p-x.p),
+    c:Math.max(0,t.c-x.c),
+    f:Math.max(0,t.f-x.f)
+  };
+}
+
+function remainingMealSlots(){
+  const h=new Date().getHours();
+  if(h<10) return ["Café da manhã","Almoço","Lanche","Jantar"];
+  if(h<14) return ["Almoço","Lanche","Jantar"];
+  if(h<18) return ["Lanche","Jantar"];
+  return ["Jantar"];
+}
+
+function buildRecalcPlan(){
+  const rem=remainingToday();
+  const slots=remainingMealSlots();
+  const n=Math.max(1,slots.length);
+  const kcalEach=rem.kcal/n;
+  const pEach=rem.p/n;
+  const cEach=rem.c/n;
+  const fEach=rem.f/n;
+
+  const suggestions=slots.map((slot,i)=>{
+    let idea="";
+    if(slot==="Café da manhã"){
+      idea="Ovos + fruta + aveia ou pão, ajustando a quantidade à meta.";
+    }else if(slot==="Almoço"){
+      idea="Frango ou outra proteína magra + arroz/batata + feijão + vegetais.";
+    }else if(slot==="Lanche"){
+      idea="Iogurte proteico ou ovos/queijo + fruta; complemente carboidrato se necessário.";
+    }else{
+      idea="Proteína magra + batata/arroz + vegetais; reduza gordura adicionada se ela já estiver alta.";
+    }
+    return `<div class="entry">
+      <div class="top"><b>${slot}</b><span class="badge">~${round(kcalEach)} kcal</span></div>
+      <div class="small">Alvo aproximado desta refeição: P ${round(pEach)} g • C ${round(cEach)} g • G ${round(fEach)} g</div>
+      <div class="small" style="margin-top:4px">${idea}</div>
+    </div>`;
+  }).join("");
+
+  const head=`<div class="notice" style="margin-bottom:10px">
+    Restante do dia: <b>${round(rem.kcal)} kcal</b> • 
+    P <b>${round(rem.p)} g</b> • C <b>${round(rem.c)} g</b> • G <b>${round(rem.f)} g</b>.
+  </div>`;
+
+  document.getElementById("recalcPlan").innerHTML=head+suggestions;
+}
+
+function registerSpokenMeal(text){
+  const clean=(text||"").trim();
+  if(!clean) return false;
+  const r=parseMeal(clean);
+  if(!r.found.length){
+    document.getElementById("mealText").value=clean;
+    document.getElementById("parseInfo").textContent=
+      "Ouvi: “"+clean+"”, mas não reconheci alimentos suficientes. Revise o texto ou use o lançamento manual.";
+    return false;
+  }
+  addEntry(clean,r.total,"voice");
+  document.getElementById("mealText").value="";
+  document.getElementById("parseInfo").textContent=
+    "Registrado por voz: "+r.found.join(", ")+". Plano do restante do dia recalculado.";
+  return true;
+}
+
 function render(){
   const k=dateKey(), t=targetFor(k), x=totals(k);
   document.getElementById("dateTitle").textContent="Hoje • "+new Date().toLocaleDateString("pt-BR");
@@ -271,7 +564,7 @@ function render(){
   document.getElementById("entries").innerHTML=entries.length?entries.map(e=>`
     <div class="entry">
       <div class="top"><b>${e.desc}</b><button class="danger" style="padding:5px 8px" onclick="removeEntry('${e.id}')">×</button></div>
-      <div class="small">${round(e.kcal)} kcal • P ${round(e.p)} g • C ${round(e.c)} g • G ${round(e.f)} g ${e.source==="estimate"?"• estimado":""}</div>
+      <div class="small">${round(e.kcal)} kcal • P ${round(e.p)} g • C ${round(e.c)} g • G ${round(e.f)} g ${e.source==="estimate"?"• estimado":e.source==="voice"?"• voz":""}</div>
     </div>`).join(""):`<div class="small">Nenhuma refeição registrada.</div>`;
 
   renderWeek(); renderAdjustments();
@@ -279,6 +572,10 @@ function render(){
   document.getElementById("setProt").value=state.settings.p;
   document.getElementById("setCarb").value=state.settings.c;
   document.getElementById("setFat").value=state.settings.f;
+  const compEl=document.getElementById("setExerciseComp");
+  if(compEl) compEl.value=state.settings.exerciseCompPct;
+  buildRecalcPlan();
+  renderExercise();
 }
 window.removeEntry=function(id){
   const d=ensureDay(); d.entries=d.entries.filter(e=>String(e.id)!==String(id)); save(); render();
@@ -289,85 +586,334 @@ function renderWeek(){
   const rows=dates.map(k=>{
     const x=totals(k), t=targetFor(k); sum+=x.kcal; target+=t.kcal;
     const diff=x.kcal-t.kcal;
+    const ex=exerciseTotalFor(k);
     return `<div class="entry"><div class="top"><b>${brDate(k)}</b><span class="badge">${round(x.kcal)} kcal</span></div>
-      <div class="small">Meta ${round(t.kcal)} • saldo ${diff>0?"+":""}${round(diff)} kcal</div></div>`;
+      <div class="small">Meta ajustada ${round(t.kcal)} • exercício ${round(ex)} kcal • saldo ${diff>0?"+":""}${round(diff)} kcal</div></div>`;
   }).join("");
   const delta=sum-target;
   document.getElementById("weekSummary").innerHTML=`<div class="metric"><span>Consumido / meta ajustada</span><b>${round(sum)} / ${round(target)} kcal</b>
   <div class="${Math.abs(delta)<300?"good":delta>0?"warn":"good"}">Saldo: ${delta>0?"+":""}${round(delta)} kcal</div></div>`;
   document.getElementById("weekList").innerHTML=rows;
 }
+
+let currentReport=null;
+
+function localDateKey(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function parseLocalDate(k){
+  const [y,m,d]=String(k).split("-").map(Number);
+  return new Date(y,m-1,d,12,0,0);
+}
+function addDays(d,n){
+  const x=new Date(d); x.setDate(x.getDate()+n); return x;
+}
+function reportRange(period,refKey){
+  const ref=parseLocalDate(refKey||dateKey());
+  let start,end;
+  if(period==="month"){
+    start=new Date(ref.getFullYear(),ref.getMonth(),1,12);
+    end=new Date(ref.getFullYear(),ref.getMonth()+1,0,12);
+  }else{
+    const dow=(ref.getDay()+6)%7; // Monday = 0
+    start=addDays(ref,-dow);
+    end=addDays(start,6);
+  }
+  return {start,end};
+}
+function dayDataForReport(k){
+  const d=state.days[k]||{entries:[],exercise:{strength:0,cardio:0}};
+  const entries=Array.isArray(d.entries)?d.entries:[];
+  const total=entries.reduce((s,e)=>({
+    kcal:s.kcal+(Number(e.kcal)||0),
+    p:s.p+(Number(e.p)||0),
+    c:s.c+(Number(e.c)||0),
+    f:s.f+(Number(e.f)||0)
+  }),{kcal:0,p:0,c:0,f:0});
+  const strength=Number(d.exercise?.strength)||0;
+  const cardio=Number(d.exercise?.cardio)||0;
+  const exercise=strength+cardio;
+  const compPct=Math.max(0,Math.min(100,Number(state.settings.exerciseCompPct)||0));
+  const credit=exercise*(compPct/100);
+  const adjustment=Number(state.adjustments[k])||0;
+  const target=Math.max(1700,(Number(state.settings.kcal)||2000)+adjustment+credit);
+  const registered=entries.length>0 || exercise>0 || Boolean(d.closed);
+  return {k,total,strength,cardio,exercise,credit,adjustment,target,registered,closed:Boolean(d.closed)};
+}
+function reportDays(period,refKey){
+  const r=reportRange(period,refKey), rows=[];
+  for(let d=new Date(r.start); d<=r.end; d=addDays(d,1)){
+    rows.push(dayDataForReport(localDateKey(d)));
+  }
+  return {range:r,rows};
+}
+function fmtBR(k){
+  return parseLocalDate(k).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit"});
+}
+function fmtLongRange(start,end,period){
+  if(period==="month"){
+    return start.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+  }
+  return `${start.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})} a ${end.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"})}`;
+}
+function buildReport(period="week",refKey=dateKey()){
+  const pack=reportDays(period,refKey);
+  const registered=pack.rows.filter(r=>r.registered);
+  const divisor=Math.max(1,registered.length);
+  const sums=registered.reduce((s,r)=>({
+    consumed:s.consumed+r.total.kcal,
+    p:s.p+r.total.p,c:s.c+r.total.c,f:s.f+r.total.f,
+    target:s.target+r.target,
+    strength:s.strength+r.strength,
+    cardio:s.cardio+r.cardio,
+    exercise:s.exercise+r.exercise,
+    credit:s.credit+r.credit
+  }),{consumed:0,p:0,c:0,f:0,target:0,strength:0,cardio:0,exercise:0,credit:0});
+  const balance=sums.consumed-sums.target;
+  const within=registered.filter(r=>Math.abs(r.total.kcal-r.target)<=Math.max(150,r.target*0.10)).length;
+  const over=registered.filter(r=>r.total.kcal-r.target>Math.max(150,r.target*0.10)).length;
+  const under=registered.filter(r=>r.target-r.total.kcal>Math.max(150,r.target*0.10)).length;
+
+  return {
+    period,refKey,range:pack.range,rows:pack.rows,registered,
+    daysRegistered:registered.length,
+    daysClosed:registered.filter(r=>r.closed).length,
+    sums,balance,within,over,under,
+    avg:{
+      consumed:sums.consumed/divisor,target:sums.target/divisor,
+      p:sums.p/divisor,c:sums.c/divisor,f:sums.f/divisor,
+      exercise:sums.exercise/divisor
+    }
+  };
+}
+function reportInterpretation(r){
+  if(!r.daysRegistered) return "Ainda não há registros suficientes neste período.";
+  const bal=Math.round(r.balance);
+  const direction=bal>150?"acima":bal<-150?"abaixo":"praticamente dentro";
+  const abs=Math.abs(bal);
+  const exShare=r.sums.exercise>0?` O exercício somou ${round(r.sums.exercise)} kcal (${round(r.sums.strength)} de musculação e ${round(r.sums.cardio)} de aeróbico).`:" Não houve gasto de exercício registrado.";
+  const adherence=` ${r.within} de ${r.daysRegistered} dias registrados ficaram dentro da faixa operacional de ±10% ou 150 kcal da meta ajustada.`;
+  const macro=` Médias diárias registradas: proteína ${round(r.avg.p)} g, carboidratos ${round(r.avg.c)} g e gorduras ${round(r.avg.f)} g.`;
+  return `No período, o consumo médio foi ${round(r.avg.consumed)} kcal/dia para uma meta ajustada média de ${round(r.avg.target)} kcal/dia. O saldo acumulado ficou ${direction} da meta em ${abs} kcal.${exShare}${adherence}${macro}`;
+}
+function renderReport(){
+  const period=document.getElementById("reportPeriod")?.value||"week";
+  const refKey=document.getElementById("reportDate")?.value||dateKey();
+  const r=buildReport(period,refKey);
+  currentReport=r;
+
+  document.getElementById("reportTitle").textContent=
+    (period==="month"?"Relatório mensal — ":"Relatório semanal — ")+fmtLongRange(r.range.start,r.range.end,period);
+
+  const m=[
+    ["Dias registrados",r.daysRegistered],
+    ["Consumido",`${round(r.sums.consumed)} kcal`],
+    ["Meta ajustada",`${round(r.sums.target)} kcal`],
+    ["Saldo acumulado",`${r.balance>0?"+":""}${round(r.balance)} kcal`],
+    ["Musculação",`${round(r.sums.strength)} kcal`],
+    ["Aeróbico",`${round(r.sums.cardio)} kcal`],
+    ["Exercício total",`${round(r.sums.exercise)} kcal`],
+    ["Crédito aplicado",`${round(r.sums.credit)} kcal`],
+    ["Proteína média",`${round(r.avg.p)} g/dia`],
+    ["Carbo médio",`${round(r.avg.c)} g/dia`],
+    ["Gordura média",`${round(r.avg.f)} g/dia`],
+    ["Dias na faixa",`${r.within}/${r.daysRegistered||0}`]
+  ];
+  document.getElementById("reportMetrics").innerHTML=m.map(([a,b])=>
+    `<div class="metric"><span>${a}</span><b>${b}</b></div>`).join("");
+
+  document.getElementById("reportInterpretation").textContent=reportInterpretation(r);
+
+  const rows=r.rows.map(x=>{
+    const bal=x.total.kcal-x.target;
+    return `<tr>
+      <td>${fmtBR(x.k)}</td>
+      <td>${x.registered?round(x.total.kcal):"—"}</td>
+      <td>${x.registered?round(x.target):"—"}</td>
+      <td>${x.registered?(bal>0?"+":"")+round(bal):"—"}</td>
+      <td>${x.registered?round(x.strength):"—"}</td>
+      <td>${x.registered?round(x.cardio):"—"}</td>
+      <td>${x.registered?round(x.total.p):"—"}</td>
+      <td>${x.registered?round(x.total.c):"—"}</td>
+      <td>${x.registered?round(x.total.f):"—"}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("reportDaily").innerHTML=
+    `<table><thead><tr><th>Dia</th><th>Cons.</th><th>Meta</th><th>Saldo</th><th>Muscul.</th><th>Aerób.</th><th>P</th><th>C</th><th>G</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function reportText(r){
+  const label=r.period==="month"?"RELATÓRIO MENSAL":"RELATÓRIO SEMANAL";
+  return `AGENTE NUTRICIONAL LD — ${label}
+${fmtLongRange(r.range.start,r.range.end,r.period)}
+
+Dias registrados: ${r.daysRegistered}
+Consumido: ${round(r.sums.consumed)} kcal
+Meta ajustada: ${round(r.sums.target)} kcal
+Saldo acumulado: ${r.balance>0?"+":""}${round(r.balance)} kcal
+Musculação: ${round(r.sums.strength)} kcal
+Aeróbico: ${round(r.sums.cardio)} kcal
+Exercício total: ${round(r.sums.exercise)} kcal
+Crédito aplicado à meta: ${round(r.sums.credit)} kcal
+Média de proteína: ${round(r.avg.p)} g/dia
+Média de carboidratos: ${round(r.avg.c)} g/dia
+Média de gorduras: ${round(r.avg.f)} g/dia
+Dias dentro da faixa: ${r.within}/${r.daysRegistered}
+
+${reportInterpretation(r)}`;
+}
+function reportCsv(r){
+  const lines=[["data","consumido_kcal","meta_ajustada_kcal","saldo_kcal","musculacao_kcal","aerobico_kcal","exercicio_total_kcal","proteina_g","carbo_g","gordura_g","fechado"]];
+  r.rows.filter(x=>x.registered).forEach(x=>lines.push([
+    x.k,round(x.total.kcal),round(x.target),round(x.total.kcal-x.target),
+    round(x.strength),round(x.cardio),round(x.exercise),
+    round(x.total.p),round(x.total.c),round(x.total.f),x.closed?"sim":"nao"
+  ]));
+  return lines.map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+}
+async function shareCurrentReport(){
+  if(!currentReport) renderReport();
+  const text=reportText(currentReport);
+  const info=document.getElementById("reportExportInfo");
+  try{
+    if(navigator.share){
+      await navigator.share({title:"Relatório — Agente Nutricional LD",text});
+      info.textContent="Relatório compartilhado.";
+    }else if(navigator.clipboard){
+      await navigator.clipboard.writeText(text);
+      info.textContent="Compartilhamento direto indisponível; resumo copiado para a área de transferência.";
+    }else{
+      info.textContent="Compartilhamento não disponível neste navegador.";
+    }
+  }catch(e){
+    if(e?.name!=="AbortError") info.textContent="Não foi possível compartilhar o relatório.";
+  }
+}
+function downloadCurrentReport(){
+  if(!currentReport) renderReport();
+  const csv="\uFEFF"+reportCsv(currentReport);
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`nutri_ld_${currentReport.period}_${currentReport.refKey}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  document.getElementById("reportExportInfo").textContent="Arquivo CSV gerado.";
+}
+
+
 function renderAdjustments(){
   const keys=Object.keys(state.adjustments).filter(k=>k>=dateKey()).sort().slice(0,7);
   document.getElementById("futureAdjustments").innerHTML=keys.length?keys.map(k=>`<div class="entry"><b>${brDate(k)}</b><div class="small">${state.adjustments[k]>0?"+":""}${round(state.adjustments[k])} kcal sobre a meta-base</div></div>`).join(""):`<div class="small">Nenhum ajuste programado.</div>`;
 }
+
 
 const voiceBtn=document.getElementById("voiceBtn");
 const voiceStatus=document.getElementById("voiceStatus");
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recognition=null;
 let listening=false;
-let voiceBaseText="";
+let stopTimer=null;
 
 function setVoiceState(on,msg){
   listening=on;
   voiceBtn.classList.toggle("listening",on);
   voiceBtn.textContent=on?"⏹️ Parar":"🎙️ Falar";
-  if(msg)voiceStatus.textContent=msg;
+  if(msg) voiceStatus.textContent=msg;
+}
+
+function appendTranscript(text){
+  const ta=document.getElementById("mealText");
+  const clean=(text||"").trim();
+  if(!clean) return;
+  ta.value=[ta.value.trim(), clean].filter(Boolean).join(ta.value.trim()?", ":"");
+  ta.focus();
 }
 
 if(SpeechRecognition){
-  recognition=new SpeechRecognition();
-  recognition.lang="pt-BR";
-  recognition.continuous=true;
-  recognition.interimResults=true;
-
-  recognition.onstart=()=>{
-    voiceBaseText=document.getElementById("mealText").value.trim();
-    setVoiceState(true,"Ouvindo… fale normalmente.");
-  };
-
-  recognition.onresult=(event)=>{
-    let finalText="";
-    let interimText="";
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      const t=event.results[i][0].transcript.trim();
-      if(event.results[i].isFinal) finalText+=(finalText?" ":"")+t;
-      else interimText+=(interimText?" ":"")+t;
+  function startVoiceRecognition(){
+    if(listening && recognition){
+      try{ recognition.stop(); }catch(e){}
+      return;
     }
-    const ta=document.getElementById("mealText");
-    const spoken=[finalText,interimText].filter(Boolean).join(" ");
-    ta.value=[voiceBaseText,spoken].filter(Boolean).join(voiceBaseText&&spoken?", ":"");
-  };
 
-  recognition.onerror=(event)=>{
-    const map={
-      "not-allowed":"Permita o acesso ao microfone para este site.",
-      "service-not-allowed":"O reconhecimento de voz foi bloqueado pelo navegador.",
-      "no-speech":"Não ouvi nenhuma fala. Toque e tente novamente.",
-      "audio-capture":"Não consegui acessar o microfone."
-    };
-    setVoiceState(false,map[event.error]||("Erro no microfone: "+event.error));
-  };
-
-  recognition.onend=()=>{
-    setVoiceState(false,"Pronto. Você pode editar o texto ou registrar a refeição.");
-  };
-
-  voiceBtn.onclick=()=>{
     try{
-      if(listening) recognition.stop();
-      else recognition.start();
+      recognition=new SpeechRecognition();
+      recognition.lang="pt-BR";
+      recognition.continuous=false;
+      recognition.interimResults=false;
+      recognition.maxAlternatives=1;
+
+      recognition.onstart=()=>{
+        setVoiceState(true,"Ouvindo… fale a refeição.");
+        clearTimeout(stopTimer);
+        stopTimer=setTimeout(()=>{
+          try{ recognition.stop(); }catch(e){}
+        },8000);
+      };
+
+      recognition.onresult=(event)=>{
+        const result=event.results?.[0]?.[0]?.transcript || "";
+        if(result){
+          const out=registerVoiceInput(result);
+          if(out.type==="exercise"){
+            voiceStatus.textContent="Gasto do treino registrado e meta recalculada.";
+          }else{
+            voiceStatus.textContent=out.ok
+              ?"Refeição registrada e plano recalculado."
+              :"Texto reconhecido. Confira antes de registrar.";
+          }
+        }
+      };
+
+      recognition.onerror=(event)=>{
+        clearTimeout(stopTimer);
+        const map={
+          "not-allowed":"Permita o acesso ao microfone para este site.",
+          "service-not-allowed":"O reconhecimento de voz foi bloqueado pelo Safari.",
+          "no-speech":"Não ouvi nenhuma fala. Toque e tente novamente.",
+          "audio-capture":"Não consegui acessar o microfone.",
+          "aborted":"Reconhecimento interrompido."
+        };
+        setVoiceState(false,map[event.error]||("Erro no microfone: "+event.error));
+      };
+
+      recognition.onend=()=>{
+        clearTimeout(stopTimer);
+        setVoiceState(false,voiceStatus.textContent==="Ouvindo… fale a refeição."
+          ?"Pronto. Toque novamente para falar outra parte."
+          :voiceStatus.textContent);
+        recognition=null;
+      };
+
+      recognition.start();
     }catch(e){
-      setVoiceState(false,"Não consegui iniciar o microfone. Recarregue a página e tente novamente.");
+      recognition=null;
+      clearTimeout(stopTimer);
+      setVoiceState(false,"O Safari não conseguiu iniciar o reconhecimento. Recarregue a página e tente novamente.");
     }
-  };
+  }
+  voiceBtn.onclick=startVoiceRecognition;
+  const exerciseVoiceBtn=document.getElementById("exerciseVoiceBtn");
+  if(exerciseVoiceBtn) exerciseVoiceBtn.onclick=startVoiceRecognition;
 }else{
-  voiceBtn.onclick=()=>{
-    voiceStatus.textContent="Este navegador não oferece reconhecimento de voz nesta página.";
-    alert("O reconhecimento de voz não está disponível neste navegador. No iPhone, abra pelo Safari e use a versão mais recente do iOS.");
+  const noVoice=()=>{
+    voiceStatus.textContent="Reconhecimento de voz indisponível neste navegador.";
+    alert("Este navegador não disponibiliza reconhecimento de voz para esta página. Use o Safari normal; em atalhos adicionados à Tela de Início esse recurso pode não estar disponível.");
   };
+  voiceBtn.onclick=noVoice;
+  const exerciseVoiceBtn=document.getElementById("exerciseVoiceBtn");
+  if(exerciseVoiceBtn) exerciseVoiceBtn.onclick=noVoice;
 }
+
+
+const saveExerciseBtn=document.getElementById("saveExercise");
+if(saveExerciseBtn) saveExerciseBtn.onclick=()=>{
+  const strength=parseFloat(document.getElementById("exStrength").value)||0;
+  const cardio=parseFloat(document.getElementById("exCardio").value)||0;
+  saveExerciseValues(strength,cardio,"manual");
+};
 
 document.getElementById("estimateBtn").onclick=()=>{
   const text=document.getElementById("mealText").value.trim(); if(!text)return;
@@ -405,24 +951,42 @@ document.getElementById("closeDay").onclick=()=>{
     state.adjustments[dk]=(state.adjustments[dk]||0)+Math.min(100,(-diff)*0.25);
   }
   save();render();
-  alert("Dia fechado. Próximas metas foram recalculadas de forma conservadora.");
+  alert("Dia fechado. O gasto do treino foi considerado e as próximas metas foram recalculadas de forma conservadora.");
 }
 document.getElementById("saveSettings").onclick=()=>{
   state.settings={
     kcal:parseFloat(document.getElementById("setKcal").value)||2000,
     p:parseFloat(document.getElementById("setProt").value)||170,
     c:parseFloat(document.getElementById("setCarb").value)||198,
-    f:parseFloat(document.getElementById("setFat").value)||60
+    f:parseFloat(document.getElementById("setFat").value)||60,
+    exerciseCompPct:Math.max(0,Math.min(100,parseFloat(document.getElementById("setExerciseComp")?.value)||0))
   };save();render();
 }
+
+const reportDateEl=document.getElementById("reportDate");
+if(reportDateEl) reportDateEl.value=dateKey();
+const generateReportBtn=document.getElementById("generateReport");
+if(generateReportBtn) generateReportBtn.onclick=renderReport;
+const reportPeriodEl=document.getElementById("reportPeriod");
+if(reportPeriodEl) reportPeriodEl.onchange=renderReport;
+if(reportDateEl) reportDateEl.onchange=renderReport;
+const shareReportBtn=document.getElementById("shareReport");
+if(shareReportBtn) shareReportBtn.onclick=shareCurrentReport;
+const downloadReportBtn=document.getElementById("downloadReport");
+if(downloadReportBtn) downloadReportBtn.onclick=downloadCurrentReport;
+const printReportBtn=document.getElementById("printReport");
+if(printReportBtn) printReportBtn.onclick=()=>{ if(!currentReport) renderReport(); window.print(); };
+
 document.getElementById("resetAll").onclick=()=>{
   if(confirm("Apagar todos os registros e ajustes?")){localStorage.removeItem("ld_nutri_state");location.reload()}
 }
 document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
-  ["hoje","semana","ajustes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==btn.dataset.tab));
+  ["hoje","semana","relatorios","ajustes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==btn.dataset.tab));
+  if(btn.dataset.tab==="relatorios") renderReport();
 });
 render();
+renderReport();
 </script>
 </body>
 </html>
