@@ -38,8 +38,8 @@ button{border:0;border-radius:12px;padding:12px 14px;font-weight:700;cursor:poin
 .entry .top{display:flex;justify-content:space-between;gap:8px}
 .badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#eef0f3;font-size:12px}
 .good{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--danger)}
-.tabs{display:flex;gap:8px;margin-bottom:12px}
-.tab{flex:1;background:#e9ebef}.tab.active{background:#111827;color:#fff}
+.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tab{flex:1 1 90px;background:#e9ebef}.tab.active{background:#111827;color:#fff}
 .hidden{display:none}
 .notice{padding:10px 12px;border-radius:12px;background:#f3f4f6;font-size:13px;line-height:1.4}
 h2{font-size:17px;margin:0 0 12px}
@@ -100,6 +100,16 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
 .v2actions button{flex:1 1 120px}
 @media(max-width:520px){.v2grid,.v2grid3{grid-template-columns:1fr}}
 
+
+/* ===== Multiusuário / nuvem ===== */
+.cloudStatus{padding:8px 10px;border-radius:10px;background:#eef2f7;font-size:12px;margin-bottom:10px}
+.cloudStatus.ok{background:#ecfdf5;color:#166534}
+.cloudStatus.warn{background:#fff7ed;color:#92400e}
+.cloudGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cloudUserRow{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.cloudStudent{border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}
+@media(max-width:520px){.cloudGrid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -111,9 +121,11 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
 
   <div class="tabs">
     <button class="tab active" data-tab="hoje">Hoje</button>
+    <button class="tab" data-tab="perfil">Perfil</button>
     <button class="tab" data-tab="semana">Semana</button>
     <button class="tab" data-tab="checkin">Check-in</button>
     <button class="tab" data-tab="relatorios">Relatórios</button>
+    <button class="tab" data-tab="conta">Conta</button>
     <button class="tab" data-tab="ajustes">Ajustes</button>
   </div>
 
@@ -369,11 +381,74 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
     <div class="card">
       <h2>Exportar / compartilhar</h2>
       <div class="reportActions">
+        <button class="secondary" id="sendReportCoach">Enviar ao professor</button>
         <button class="secondary" id="shareReport">Compartilhar resumo</button>
         <button class="secondary" id="downloadReport">Baixar CSV</button>
         <button class="secondary" id="printReport">Imprimir / Salvar PDF</button>
       </div>
       <div id="reportExportInfo" class="small" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+
+  <section id="conta" class="hidden">
+    <div class="card">
+      <h2>Conta LD Nutri</h2>
+      <div id="cloudStatus" class="cloudStatus warn">Modo local. A nuvem ainda não foi configurada.</div>
+
+      <div id="authLoggedOut">
+        <div class="cloudGrid">
+          <label>Nome
+            <input id="authName" placeholder="Nome">
+          </label>
+          <label>Tipo de conta
+            <select id="authType">
+              <option value="student">Aluno</option>
+              <option value="coach">Professor</option>
+            </select>
+          </label>
+          <label>E-mail
+            <input id="authEmail" type="email" autocomplete="email" placeholder="email@exemplo.com">
+          </label>
+          <label>Senha
+            <input id="authPassword" type="password" autocomplete="current-password" minlength="6">
+          </label>
+        </div>
+        <div class="v2actions">
+          <button class="primary" id="authSignup">Criar conta</button>
+          <button class="secondary" id="authSignin">Entrar</button>
+        </div>
+        <div id="authMessage" class="small" style="margin-top:8px"></div>
+      </div>
+
+      <div id="authLoggedIn" class="hidden">
+        <div class="cloudUserRow">
+          <div>
+            <b id="cloudUserName">Conta conectada</b>
+            <div id="cloudUserEmail" class="small"></div>
+          </div>
+          <button class="secondary" id="authSignout">Sair</button>
+        </div>
+        <div id="cloudSyncInfo" class="small" style="margin-top:8px">Sincronização ativa.</div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="studentCoachCard">
+      <h2>Meu professor</h2>
+      <div id="studentCoachInfo" class="small">Nenhum professor vinculado.</div>
+      <label>Código do professor
+        <input id="coachInviteInput" placeholder="Ex.: A1B2C3D4" autocapitalize="characters">
+      </label>
+      <button class="primary" id="linkCoachBtn">Vincular ao professor</button>
+    </div>
+
+    <div class="card hidden" id="coachPanelCard">
+      <h2>Painel do professor</h2>
+      <div class="notice">
+        Seu código para alunos: <b id="coachInviteCode">—</b>
+      </div>
+      <div id="coachStudentList" style="margin-top:10px"></div>
+      <div class="small" style="margin-top:8px">Os alunos vinculam a conta usando este código e podem enviar relatórios semanais ou mensais.</div>
     </div>
   </section>
 
@@ -407,6 +482,7 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const FOOD_DB = [
   {keys:["ovo","ovos"], unit:"un", kcal:72, p:6.3, c:0.4, f:4.8},
@@ -427,6 +503,28 @@ const FOOD_DB = [
   {keys:["pizza"], unit:"fatia", kcal:285, p:12, c:36, f:10},
   {keys:["pão de alho","pao de alho"], unit:"un", kcal:190, p:4, c:25, f:8}
 ];
+
+
+// ===== Configuração Supabase =====
+// Preencher uma única vez antes de publicar a versão multiusuário.
+const LD_SUPABASE_URL="https://kavrxhvlhfjxanlyalkh.supabase.co";
+const LD_SUPABASE_KEY="sb_publishable_aEfncb4Md4soREoMP_c9VA_ETW6rsWE";
+const LD_CLOUD_READY=
+  LD_SUPABASE_URL.startsWith("https://") &&
+  !LD_SUPABASE_URL.includes("__SUPABASE") &&
+  LD_SUPABASE_KEY.startsWith("sb_publishable_");
+
+let ldCloud=null;
+let cloudUser=null;
+let cloudProfile=null;
+let cloudLoading=false;
+let cloudSaveTimer=null;
+
+if(LD_CLOUD_READY && window.supabase){
+  ldCloud=window.supabase.createClient(LD_SUPABASE_URL,LD_SUPABASE_KEY,{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+}
 
 const state = JSON.parse(localStorage.getItem("ld_nutri_state") || "null") || {
   settings:{kcal:2000,p:170,c:198,f:60},
@@ -495,7 +593,10 @@ function exerciseCreditFor(k=dateKey()){
 }
 
 
-function save(){localStorage.setItem("ld_nutri_state", JSON.stringify(state))}
+function save(){
+  localStorage.setItem("ld_nutri_state", JSON.stringify(state));
+  scheduleCloudSave();
+}
 function dateKey(d=new Date()){return d.toISOString().slice(0,10)}
 function brDate(k){return new Date(k+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"})}
 function ensureDay(k=dateKey()){
@@ -831,6 +932,243 @@ function renderWeek(){
 
 function uid2(prefix="X"){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 
+
+function replaceStateFromCloud(remote){
+  if(!remote || typeof remote!=="object") return;
+  cloudLoading=true;
+  Object.keys(state).forEach(k=>delete state[k]);
+  Object.assign(state,remote);
+  if(!state.settings) state.settings={kcal:2000,p:170,c:198,f:60,exerciseCompPct:60};
+  if(!state.days) state.days={};
+  if(!state.adjustments) state.adjustments={};
+  if(!state.profile) state.profile={name:"",goal:"emagrecimento",weight:"",height:"",prefs:""};
+  if(!state.diets) state.diets=[];
+  if(!state.checkins) state.checkins=[];
+  if(!state.favoriteMeals) state.favoriteMeals=[];
+  ensureInitialDiet();
+  localStorage.setItem("ld_nutri_state",JSON.stringify(state));
+  cloudLoading=false;
+}
+
+function scheduleCloudSave(){
+  if(!LD_CLOUD_READY || !ldCloud || !cloudUser || cloudLoading) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(saveStateToCloud,600);
+}
+async function saveStateToCloud(){
+  if(!ldCloud || !cloudUser || cloudLoading) return;
+  const el=document.getElementById("cloudSyncInfo");
+  if(el) el.textContent="Salvando na nuvem…";
+  const {error}=await ldCloud.from("ld_app_states").upsert({
+    user_id:cloudUser.id,
+    state:JSON.parse(JSON.stringify(state)),
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(el) el.textContent=error?"Erro ao sincronizar: "+error.message:"Sincronizado na nuvem.";
+}
+async function loadStateFromCloud(){
+  if(!ldCloud || !cloudUser) return;
+  cloudLoading=true;
+  const {data,error}=await ldCloud.from("ld_app_states")
+    .select("state,updated_at")
+    .eq("user_id",cloudUser.id)
+    .maybeSingle();
+  cloudLoading=false;
+  if(error){
+    const el=document.getElementById("cloudSyncInfo");
+    if(el) el.textContent="Erro ao carregar dados: "+error.message;
+    return;
+  }
+  if(data?.state && Object.keys(data.state).length){
+    replaceStateFromCloud(data.state);
+  }else{
+    await saveStateToCloud(); // migra automaticamente os dados locais da primeira conta
+  }
+  render(); renderProfileV2(); renderCheckinsV2(); renderReport();
+}
+async function ensureCloudProfile(preferredType){
+  if(!ldCloud || !cloudUser) return null;
+  let {data}=await ldCloud.from("ld_profiles").select("*").eq("user_id",cloudUser.id).maybeSingle();
+  if(!data){
+    const accountType=preferredType||localStorage.getItem("ld_pending_account_type")||"student";
+    const name=state.profile?.name||localStorage.getItem("ld_pending_name")||"";
+    const res=await ldCloud.rpc("ld_ensure_profile",{p_name:name,p_account_type:accountType});
+    if(res.error) throw res.error;
+    data=Array.isArray(res.data)?res.data[0]:res.data;
+  }
+  cloudProfile=data;
+  return data;
+}
+async function syncCloudProfile(){
+  if(!ldCloud || !cloudUser) return;
+  const {error}=await ldCloud.from("ld_profiles").update({
+    name:state.profile?.name||"",
+    updated_at:new Date().toISOString()
+  }).eq("user_id",cloudUser.id);
+  if(!error && cloudProfile) cloudProfile.name=state.profile?.name||cloudProfile.name;
+  renderCloudAccount();
+}
+async function linkedCoach(){
+  if(!ldCloud || !cloudUser) return null;
+  const {data:links}=await ldCloud.from("ld_coach_student_links")
+    .select("coach_id,active").eq("student_id",cloudUser.id).eq("active",true).limit(1);
+  if(!links?.length) return null;
+  const {data:coach}=await ldCloud.from("ld_profiles")
+    .select("user_id,name,invite_code").eq("user_id",links[0].coach_id).maybeSingle();
+  return coach||{user_id:links[0].coach_id,name:"Professor"};
+}
+async function renderCloudAccount(){
+  const status=document.getElementById("cloudStatus");
+  const out=document.getElementById("authLoggedOut");
+  const inn=document.getElementById("authLoggedIn");
+  const studentCard=document.getElementById("studentCoachCard");
+  const coachCard=document.getElementById("coachPanelCard");
+  if(!status)return;
+
+  if(!LD_CLOUD_READY){
+    status.className="cloudStatus warn";
+    status.textContent="Multiusuário preparado, aguardando conexão com o banco de dados.";
+    out?.classList.remove("hidden"); inn?.classList.add("hidden");
+    studentCard?.classList.add("hidden"); coachCard?.classList.add("hidden");
+    return;
+  }
+  if(!cloudUser){
+    status.className="cloudStatus warn";
+    status.textContent="Entre ou crie sua conta para sincronizar os dados.";
+    out?.classList.remove("hidden"); inn?.classList.add("hidden");
+    studentCard?.classList.add("hidden"); coachCard?.classList.add("hidden");
+    return;
+  }
+  status.className="cloudStatus ok";
+  status.textContent="Conta conectada • dados separados e sincronizados.";
+  out?.classList.add("hidden"); inn?.classList.remove("hidden");
+  document.getElementById("cloudUserEmail").textContent=cloudUser.email||"";
+  document.getElementById("cloudUserName").textContent=cloudProfile?.name||state.profile?.name||"Conta LD";
+  if(cloudProfile?.account_type==="coach"){
+    studentCard?.classList.add("hidden"); coachCard?.classList.remove("hidden");
+    document.getElementById("coachInviteCode").textContent=cloudProfile.invite_code||"—";
+    await renderCoachDashboard();
+  }else{
+    coachCard?.classList.add("hidden"); studentCard?.classList.remove("hidden");
+    const coach=await linkedCoach();
+    document.getElementById("studentCoachInfo").textContent=
+      coach?`Vinculado a ${coach.name||"professor"}.`:"Nenhum professor vinculado.";
+  }
+}
+async function initCloud(){
+  if(!LD_CLOUD_READY || !ldCloud){ renderCloudAccount(); return; }
+  const {data}=await ldCloud.auth.getSession();
+  cloudUser=data?.session?.user||null;
+  if(cloudUser){
+    try{await ensureCloudProfile(); await loadStateFromCloud();}catch(e){console.error(e);}
+  }
+  await renderCloudAccount();
+  ldCloud.auth.onAuthStateChange(async(event,session)=>{
+    const prior=cloudUser?.id;
+    cloudUser=session?.user||null;
+    if(cloudUser && cloudUser.id!==prior){
+      try{await ensureCloudProfile(); await loadStateFromCloud();}catch(e){console.error(e);}
+    }
+    if(!cloudUser) cloudProfile=null;
+    await renderCloudAccount();
+  });
+}
+async function cloudSignup(){
+  if(!LD_CLOUD_READY) return setAuthMsg("A conexão com a nuvem ainda não foi configurada.");
+  const email=document.getElementById("authEmail").value.trim();
+  const password=document.getElementById("authPassword").value;
+  const name=document.getElementById("authName").value.trim();
+  const type=document.getElementById("authType").value;
+  if(!email||password.length<6) return setAuthMsg("Informe e-mail e senha com pelo menos 6 caracteres.");
+  localStorage.setItem("ld_pending_account_type",type);
+  localStorage.setItem("ld_pending_name",name);
+  if(name){state.profile.name=name; localStorage.setItem("ld_nutri_state",JSON.stringify(state));}
+  const {data,error}=await ldCloud.auth.signUp({
+    email,password,
+    options:{emailRedirectTo:location.origin+location.pathname,data:{name}}
+  });
+  if(error) return setAuthMsg(error.message);
+  if(data?.session){
+    cloudUser=data.user; await ensureCloudProfile(type); await loadStateFromCloud(); await renderCloudAccount();
+    setAuthMsg("Conta criada e conectada.");
+  }else setAuthMsg("Conta criada. Confira seu e-mail para confirmar o cadastro.");
+}
+async function cloudSignin(){
+  if(!LD_CLOUD_READY) return setAuthMsg("A conexão com a nuvem ainda não foi configurada.");
+  const email=document.getElementById("authEmail").value.trim();
+  const password=document.getElementById("authPassword").value;
+  const {data,error}=await ldCloud.auth.signInWithPassword({email,password});
+  if(error) return setAuthMsg(error.message);
+  cloudUser=data.user; await ensureCloudProfile(); await loadStateFromCloud(); await renderCloudAccount();
+  setAuthMsg("Conectado.");
+}
+async function cloudSignout(){
+  if(ldCloud) await ldCloud.auth.signOut();
+  cloudUser=null; cloudProfile=null; renderCloudAccount();
+}
+function setAuthMsg(s){const e=document.getElementById("authMessage");if(e)e.textContent=s;}
+async function linkCoachByCode(){
+  if(!ldCloud||!cloudUser)return;
+  const code=document.getElementById("coachInviteInput").value.trim().toUpperCase();
+  if(!code)return;
+  const {data,error}=await ldCloud.rpc("ld_link_to_coach",{p_invite_code:code});
+  if(error)return alert("Não foi possível vincular: "+error.message);
+  alert("Professor vinculado.");
+  document.getElementById("coachInviteInput").value="";
+  await renderCloudAccount();
+}
+async function sendCurrentReportToCoach(){
+  if(!LD_CLOUD_READY||!ldCloud||!cloudUser)return alert("Entre na sua conta para enviar o relatório.");
+  if(cloudProfile?.account_type==="coach")return alert("Esta conta é de professor.");
+  if(!currentReport)renderReport();
+  const coach=await linkedCoach();
+  if(!coach)return alert("Vincule primeiro o seu professor na aba Conta.");
+  const payload={
+    period:currentReport.period,
+    daysRegistered:currentReport.daysRegistered,
+    sums:currentReport.sums,
+    balance:currentReport.balance,
+    avg:currentReport.avg,
+    within:currentReport.within,
+    interpretation:reportInterpretation(currentReport)
+  };
+  const {error}=await ldCloud.from("ld_reports").insert({
+    student_id:cloudUser.id,
+    coach_id:coach.user_id,
+    period_type:currentReport.period,
+    start_date:localDateKey(currentReport.range.start),
+    end_date:localDateKey(currentReport.range.end),
+    report:payload
+  });
+  if(error)return alert("Erro ao enviar relatório: "+error.message);
+  alert("Relatório enviado ao professor.");
+}
+async function renderCoachDashboard(){
+  const box=document.getElementById("coachStudentList");
+  if(!box||!ldCloud||!cloudUser)return;
+  box.innerHTML='<div class="small">Carregando alunos…</div>';
+  const {data:links,error}=await ldCloud.from("ld_coach_student_links")
+    .select("student_id,created_at").eq("coach_id",cloudUser.id).eq("active",true);
+  if(error){box.innerHTML='<div class="small">Erro ao carregar alunos.</div>';return;}
+  if(!links?.length){box.innerHTML='<div class="small">Nenhum aluno vinculado ainda.</div>';return;}
+  const ids=links.map(x=>x.student_id);
+  const {data:profiles}=await ldCloud.from("ld_profiles").select("user_id,name").in("user_id",ids);
+  const {data:reports}=await ldCloud.from("ld_reports")
+    .select("id,student_id,period_type,start_date,end_date,report,created_at")
+    .eq("coach_id",cloudUser.id).order("created_at",{ascending:false}).limit(50);
+  const names=Object.fromEntries((profiles||[]).map(p=>[p.user_id,p.name||"Aluno"]));
+  box.innerHTML=ids.map(id=>{
+    const rr=(reports||[]).filter(r=>r.student_id===id);
+    const latest=rr[0];
+    return `<div class="cloudStudent">
+      <div class="top"><b>${names[id]||"Aluno"}</b><span class="badge">${rr.length} relatório(s)</span></div>
+      ${latest?`<div class="small" style="margin-top:6px">Último: ${latest.period_type==="month"?"mensal":"semanal"} • ${latest.start_date} a ${latest.end_date}</div>
+      <div class="small">${latest.report?.interpretation||""}</div>`:`<div class="small" style="margin-top:6px">Ainda não enviou relatório.</div>`}
+    </div>`;
+  }).join("");
+}
+
+
 function renderProfileV2(){
   const p=state.profile||{};
   const byId=id=>document.getElementById(id);
@@ -886,6 +1224,7 @@ function saveProfileV2(){
     prefs:document.getElementById("profilePrefs")?.value.trim()||""
   };
   save(); renderProfileV2();
+  syncCloudProfile();
 }
 function createDietCycleV2(){
   const start=document.getElementById("dietStart")?.value||dateKey();
@@ -1332,6 +1671,18 @@ if(saveFavMealBtn) saveFavMealBtn.onclick=saveFavMealV2;
 const saveCheckinBtn=document.getElementById("saveCheckin");
 if(saveCheckinBtn) saveCheckinBtn.onclick=saveCheckinV2;
 
+
+const authSignupBtn=document.getElementById("authSignup");
+if(authSignupBtn)authSignupBtn.onclick=cloudSignup;
+const authSigninBtn=document.getElementById("authSignin");
+if(authSigninBtn)authSigninBtn.onclick=cloudSignin;
+const authSignoutBtn=document.getElementById("authSignout");
+if(authSignoutBtn)authSignoutBtn.onclick=cloudSignout;
+const linkCoachBtn=document.getElementById("linkCoachBtn");
+if(linkCoachBtn)linkCoachBtn.onclick=linkCoachByCode;
+const sendReportCoachBtn=document.getElementById("sendReportCoach");
+if(sendReportCoachBtn)sendReportCoachBtn.onclick=sendCurrentReportToCoach;
+
 const reportDateEl=document.getElementById("reportDate");
 if(reportDateEl) reportDateEl.value=dateKey();
 const generateReportBtn=document.getElementById("generateReport");
@@ -1351,15 +1702,17 @@ document.getElementById("resetAll").onclick=()=>{
 }
 document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
-  ["hoje","perfil","semana","checkin","relatorios","ajustes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==btn.dataset.tab));
+  ["hoje","perfil","semana","checkin","relatorios","conta","ajustes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==btn.dataset.tab));
   if(btn.dataset.tab==="relatorios") renderReport();
   if(btn.dataset.tab==="perfil") renderProfileV2();
   if(btn.dataset.tab==="checkin") renderCheckinsV2();
+  if(btn.dataset.tab==="conta") renderCloudAccount();
 });
 render();
 renderProfileV2();
 renderCheckinsV2();
 renderReport();
+initCloud();
 </script>
 </body>
 </html>
