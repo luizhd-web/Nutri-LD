@@ -4,169 +4,424 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#111827">
-<title>Agente Nutricional LD v2</title>
+<title>Agente Nutricional LD</title>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--txt:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#111827;--soft:#f3f4f6}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt)}
-.wrap{max-width:760px;margin:auto;padding:16px 14px 40px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:12px}
-h1{font-size:25px;margin:5px 0}.sub,.small{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.metric{padding:11px;border:1px solid var(--line);border-radius:13px}.metric b{display:block;font-size:19px;margin-top:4px}
-textarea,input,button{font:inherit}textarea,input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}textarea{min-height:85px}
-button{border:0;border-radius:12px;padding:11px 12px;font-weight:700;cursor:pointer}.primary{width:100%;background:var(--accent);color:#fff;margin-top:8px}
-.secondary{background:var(--soft)}.meal{padding:12px 0;border-bottom:1px solid var(--line)}.meal:last-child{border-bottom:0}
-.mealhead{display:flex;align-items:center;justify-content:space-between;gap:8px}.pill{font-size:11px;background:var(--soft);padding:4px 7px;border-radius:99px}
-.foodplan{margin-top:7px;line-height:1.45;font-size:14px}.actual{font-size:13px;margin-top:6px}.remaining{background:#f8fafc;border-radius:12px;padding:11px;margin-top:10px}
-.row{display:flex;gap:8px}.row>*{flex:1}.note{font-size:12px;color:#4b5563;margin-top:7px}
-@media(min-width:560px){.grid{grid-template-columns:repeat(4,1fr)}}
+:root{
+  --bg:#f6f7f9; --card:#fff; --text:#111827; --muted:#6b7280; --line:#e5e7eb;
+  --ok:#166534; --warn:#92400e; --danger:#991b1b; --accent:#111827;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:720px;margin:0 auto;padding:18px 14px 40px}
+header{padding:8px 2px 16px}
+h1{font-size:26px;margin:0 0 4px} .sub{color:var(--muted);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.metric{border:1px solid var(--line);border-radius:14px;padding:12px}
+.metric b{display:block;font-size:20px;margin-top:4px}.metric span{font-size:12px;color:var(--muted)}
+.progress{height:8px;border-radius:99px;background:#eceff3;overflow:hidden;margin-top:8px}
+.progress > i{display:block;height:100%;background:var(--accent);width:0}
+textarea,input,select,button{font:inherit}
+textarea,input,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+textarea{min-height:96px;resize:vertical}
+button{border:0;border-radius:12px;padding:12px 14px;font-weight:700;cursor:pointer}
+.primary{background:var(--accent);color:white;width:100%;margin-top:10px}
+.secondary{background:#eef0f3;color:#111827}
+.danger{background:#fee2e2;color:#991b1b}
+.row{display:flex;gap:8px;align-items:center}
+.row > *{flex:1}
+.small{font-size:12px;color:var(--muted)}
+.entry{padding:10px 0;border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.entry .top{display:flex;justify-content:space-between;gap:8px}
+.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#eef0f3;font-size:12px}
+.good{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--danger)}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;background:#e9ebef}.tab.active{background:#111827;color:#fff}
+.hidden{display:none}
+.notice{padding:10px 12px;border-radius:12px;background:#f3f4f6;font-size:13px;line-height:1.4}
+h2{font-size:17px;margin:0 0 12px}
+label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
+.quick{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.quick button{padding:8px 10px;background:#f3f4f6;font-weight:600;font-size:13px}
+.voiceRow{display:flex;gap:8px;margin-top:10px;align-items:center}
+.voiceBtn{flex:0 0 auto;background:#eef0f3;color:#111827;min-width:120px}
+.voiceBtn.listening{background:#fee2e2;color:#991b1b}
+.voiceStatus{font-size:12px;color:var(--muted);line-height:1.25}
+.footer{font-size:11px;color:var(--muted);line-height:1.45;margin-top:16px}
+@media (min-width:560px){.grid{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><h1>Agente Nutricional LD</h1><div class="sub">Recalcula automaticamente o restante do dia a cada refeição registrada.</div></header>
+  <header>
+    <h1>Agente Nutricional LD</h1>
+    <div class="sub">Plano-base: ~2.000 kcal • proteína protegida • ajuste diário e semanal</div>
+  </header>
 
-<div class="card">
-  <div class="grid">
-    <div class="metric"><span class="small">Meta hoje</span><b id="goalK">2000 kcal</b></div>
-    <div class="metric"><span class="small">Consumido</span><b id="usedK">0 kcal</b></div>
-    <div class="metric"><span class="small">Proteína</span><b id="usedP">0 / 170 g</b></div>
-    <div class="metric"><span class="small">Restante</span><b id="leftK">2000 kcal</b></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="hoje">Hoje</button>
+    <button class="tab" data-tab="semana">Semana</button>
+    <button class="tab" data-tab="ajustes">Ajustes</button>
   </div>
-  <div id="dayMsg" class="remaining"></div>
-</div>
 
-<div class="card">
-  <b>Registrar o que você acabou de comer</b>
-  <div class="small" style="margin:5px 0 8px">Ex.: “2 ovos, 2 fatias de queijo e meio mamão”</div>
-  <textarea id="txt"></textarea>
-  <div class="row">
-    <button class="secondary" onclick="setMeal('cafe')">Café</button>
-    <button class="secondary" onclick="setMeal('almoco')">Almoço</button>
-    <button class="secondary" onclick="setMeal('lanche')">Lanche</button>
-    <button class="secondary" onclick="setMeal('janta')">Janta</button>
+  <section id="hoje">
+    <div class="card">
+      <h2 id="dateTitle">Hoje</h2>
+      <div class="grid">
+        <div class="metric"><span>Calorias</span><b id="kcalVal">0 / 2000</b><div class="progress"><i id="kcalBar"></i></div></div>
+        <div class="metric"><span>Proteína</span><b id="protVal">0 / 170 g</b><div class="progress"><i id="protBar"></i></div></div>
+        <div class="metric"><span>Carbo</span><b id="carbVal">0 / 198 g</b><div class="progress"><i id="carbBar"></i></div></div>
+        <div class="metric"><span>Gordura</span><b id="fatVal">0 / 60 g</b><div class="progress"><i id="fatBar"></i></div></div>
+      </div>
+      <div id="todayAdvice" class="notice" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Registrar refeição</h2>
+      <label>Escreva do teu jeito</label>
+      <textarea id="mealText" placeholder="Ex.: 2 ovos, 1 pão francês, 1 fatia de queijo e 1/4 de mamão papaya"></textarea>
+      <div class="voiceRow">
+        <button type="button" class="voiceBtn" id="voiceBtn">🎙️ Falar</button>
+        <div class="voiceStatus" id="voiceStatus">Toque no microfone e fale a refeição.</div>
+      </div>
+      <div class="quick">
+        <button data-q="2 ovos">2 ovos</button>
+        <button data-q="1 pão francês">Pão francês</button>
+        <button data-q="1 fatia de queijo">Queijo</button>
+        <button data-q="1 banana">Banana</button>
+        <button data-q="180 g de frango">Frango 180 g</button>
+        <button data-q="200 g de batata">Batata 200 g</button>
+        <button data-q="120 g de arroz">Arroz 120 g</button>
+        <button data-q="80 g de feijão">Feijão 80 g</button>
+      </div>
+      <button class="primary" id="estimateBtn">Estimar e adicionar</button>
+      <div id="parseInfo" class="small" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Lançamento manual</h2>
+      <div class="row">
+        <div><label>kcal</label><input id="mKcal" type="number" inputmode="decimal"></div>
+        <div><label>Prot. g</label><input id="mProt" type="number" inputmode="decimal"></div>
+      </div>
+      <div class="row">
+        <div><label>Carbo g</label><input id="mCarb" type="number" inputmode="decimal"></div>
+        <div><label>Gord. g</label><input id="mFat" type="number" inputmode="decimal"></div>
+      </div>
+      <label>Descrição</label><input id="mDesc" placeholder="Ex.: jantar fora">
+      <button class="primary" id="manualBtn">Adicionar manualmente</button>
+    </div>
+
+    <div class="card">
+      <h2>Refeições de hoje</h2>
+      <div id="entries"></div>
+    </div>
+
+    <div class="card">
+      <button class="secondary" id="closeDay" style="width:100%">Fechar o dia e recalcular próximos dias</button>
+    </div>
+  </section>
+
+  <section id="semana" class="hidden">
+    <div class="card">
+      <h2>Saldo semanal</h2>
+      <div id="weekSummary"></div>
+    </div>
+    <div class="card">
+      <h2>Últimos 7 dias</h2>
+      <div id="weekList"></div>
+    </div>
+  </section>
+
+  <section id="ajustes" class="hidden">
+    <div class="card">
+      <h2>Metas</h2>
+      <div class="row">
+        <div><label>Calorias base</label><input id="setKcal" type="number"></div>
+        <div><label>Proteína</label><input id="setProt" type="number"></div>
+      </div>
+      <div class="row">
+        <div><label>Carboidratos</label><input id="setCarb" type="number"></div>
+        <div><label>Gorduras</label><input id="setFat" type="number"></div>
+      </div>
+      <button class="primary" id="saveSettings">Salvar metas</button>
+    </div>
+    <div class="card">
+      <h2>Próximos ajustes</h2>
+      <div id="futureAdjustments"></div>
+    </div>
+    <div class="card">
+      <button class="danger" id="resetAll" style="width:100%">Apagar todos os dados</button>
+    </div>
+  </section>
+
+  <div class="footer">
+    Estimativas alimentares variam por marca, preparo e tamanho das porções. Este app é um apoio de acompanhamento do plano-base e não substitui avaliação de nutricionista, especialmente diante de mudanças clínicas, exames, medicações ou sintomas.
   </div>
-  <input type="hidden" id="slot" value="cafe">
-  <button class="primary" onclick="registerMeal()">Registrar e recalcular</button>
-  <div id="parse" class="note"></div>
-</div>
-
-<div class="card">
-  <b>Plano recalculado de hoje</b>
-  <div id="plan"></div>
-</div>
-
-<div class="card">
-  <b>Correção manual de uma refeição</b>
-  <div class="small" style="margin:5px 0 8px">Use quando a estimativa automática não representar bem a refeição.</div>
-  <div class="row"><input id="mk" type="number" placeholder="kcal"><input id="mp" type="number" placeholder="proteína g"></div>
-  <div class="row" style="margin-top:8px"><input id="mc" type="number" placeholder="carbo g"><input id="mf" type="number" placeholder="gordura g"></div>
-  <button class="primary" onclick="manual()">Substituir refeição selecionada</button>
-</div>
-
-<div class="small">Estimativas variam conforme porção, marca e preparo. O sistema usa o plano-base de ~2.000 kcal e protege a meta proteica; mudanças clínicas, exames, medicações ou sintomas exigem avaliação profissional.</div>
 </div>
 
 <script>
-const targets={k:2000,p:170,c:198,f:60};
-const names={cafe:"Café da manhã",almoco:"Almoço",lanche:"Lanche da tarde",janta:"Janta"};
-const order=["cafe","almoco","lanche","janta"];
-const baseWeights={cafe:.24,almoco:.29,lanche:.19,janta:.28};
-
-const DB=[
- {keys:["ovo","ovos"],type:"unit",k:72,p:6.3,c:.4,f:4.8},
- {keys:["fatia de queijo","fatias de queijo","queijo"],type:"unit",k:70,p:5,c:1,f:5},
- {keys:["pão francês","pao frances","cacetinho","pão cacetinho","pao cacetinho"],type:"unit",k:140,p:4.5,c:28,f:1.5},
- {keys:["mamão papaya","mamao papaya","mamão","mamao"],type:"mamao",k:150,p:1.8,c:38,f:1},
- {keys:["banana"],type:"unit",k:90,p:1.1,c:23,f:.3},
- {keys:["frango","peito de frango"],type:"100g",k:165,p:31,c:0,f:3.6},
- {keys:["patinho"],type:"100g",k:180,p:28,c:0,f:7},
- {keys:["peixe"],type:"100g",k:130,p:26,c:0,f:3},
- {keys:["arroz"],type:"100g",k:130,p:2.7,c:28,f:.3},
- {keys:["feijão","feijao"],type:"100g",k:76,p:4.8,c:13.6,f:.5},
- {keys:["batata"],type:"100g",k:87,p:1.9,c:20,f:.1},
- {keys:["aveia"],type:"100g",k:389,p:16.9,c:66.3,f:6.9},
- {keys:["azeite"],type:"10g",k:90,p:0,c:0,f:10},
- {keys:["maçã","maca"],type:"unit",k:80,p:.4,c:21,f:.3},
- {keys:["laranja"],type:"unit",k:65,p:1.2,c:16,f:.2},
- {keys:["vinho"],type:"glass",k:125,p:0,c:4,f:0}
+const FOOD_DB = [
+  {keys:["ovo","ovos"], unit:"un", kcal:72, p:6.3, c:0.4, f:4.8},
+  {keys:["pão francês","pao frances","cacetinho","pão cacetinho","pao cacetinho"], unit:"un", kcal:140, p:4.5, c:28, f:1.5},
+  {keys:["fatia de queijo","queijo"], unit:"fatia", kcal:70, p:5, c:1, f:5},
+  {keys:["banana"], unit:"un", kcal:90, p:1.1, c:23, f:0.3},
+  {keys:["mamão papaya","mamao papaya","mamão","mamao"], unit:"100g", kcal:43, p:0.5, c:11, f:0.3},
+  {keys:["frango","peito de frango"], unit:"100g", kcal:165, p:31, c:0, f:3.6},
+  {keys:["arroz"], unit:"100g", kcal:130, p:2.7, c:28, f:0.3},
+  {keys:["feijão","feijao"], unit:"100g", kcal:76, p:4.8, c:13.6, f:0.5},
+  {keys:["batata"], unit:"100g", kcal:87, p:1.9, c:20, f:0.1},
+  {keys:["aveia"], unit:"100g", kcal:389, p:16.9, c:66.3, f:6.9},
+  {keys:["azeite"], unit:"10g", kcal:90, p:0, c:0, f:10},
+  {keys:["maçã","maca"], unit:"un", kcal:80, p:0.4, c:21, f:0.3},
+  {keys:["laranja"], unit:"un", kcal:65, p:1.2, c:16, f:0.2},
+  {keys:["iogurte proteico"], unit:"un", kcal:120, p:15, c:10, f:2},
+  {keys:["vinho"], unit:"150ml", kcal:125, p:0, c:4, f:0},
+  {keys:["pizza"], unit:"fatia", kcal:285, p:12, c:36, f:10},
+  {keys:["pão de alho","pao de alho"], unit:"un", kcal:190, p:4, c:25, f:8}
 ];
-let S=JSON.parse(localStorage.getItem("LDnutriV2")||"null")||{date:new Date().toISOString().slice(0,10),actual:{}};
-if(S.date!==new Date().toISOString().slice(0,10))S={date:new Date().toISOString().slice(0,10),actual:{}};
-function save(){localStorage.setItem("LDnutriV2",JSON.stringify(S))}
-function norm(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
-function amountBefore(t,key){
- let a=norm(t), k=norm(key), i=a.indexOf(k), pre=a.slice(Math.max(0,i-24),i);
- let m=pre.match(/(\d+(?:[.,]\d+)?)\s*(g|ml|fatia|fatias)?\s*$/);
- if(m)return {n:+m[1].replace(",","."),u:m[2]||""};
- if(/meio\s*(de\s*)?$/.test(pre)||/1\/2\s*(de\s*)?$/.test(pre))return {n:.5,u:"frac"};
- if(/um quarto\s*(de\s*)?$/.test(pre)||/1\/4\s*(de\s*)?$/.test(pre))return {n:.25,u:"frac"};
- return null;
+
+const state = JSON.parse(localStorage.getItem("ld_nutri_state") || "null") || {
+  settings:{kcal:2000,p:170,c:198,f:60},
+  days:{},
+  adjustments:{}
+};
+
+function save(){localStorage.setItem("ld_nutri_state", JSON.stringify(state))}
+function dateKey(d=new Date()){return d.toISOString().slice(0,10)}
+function brDate(k){return new Date(k+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"})}
+function ensureDay(k=dateKey()){
+  if(!state.days[k]) state.days[k]={entries:[],closed:false};
+  return state.days[k];
 }
-function parseMeal(t){
- let x={k:0,p:0,c:0,f:0},found=[];
- for(const d of DB){
-   let key=d.keys.find(q=>norm(t).includes(norm(q))); if(!key)continue;
-   let q=amountBefore(t,key), mult=1;
-   if(d.type==="unit") mult=q?q.n:1;
-   if(d.type==="100g") mult=q&&q.u==="g"?q.n/100:1;
-   if(d.type==="10g") mult=q&&q.u==="g"?q.n/10:1;
-   if(d.type==="glass") mult=q?q.n:1;
-   if(d.type==="mamao") mult=q&&q.u==="frac"?q.n:(q&&q.u==="g"?q.n/350:.5);
-   for(const z of ["k","p","c","f"])x[z]+=d[z]*mult;
-   found.push(key);
- }
- return {x,found};
+function targetFor(k=dateKey()){
+  const a=state.adjustments[k]||0;
+  return {...state.settings,kcal:Math.max(1700,state.settings.kcal+a),adjustment:a};
 }
-function setMeal(s){document.getElementById("slot").value=s;document.getElementById("parse").textContent="Registrando: "+names[s]}
-function registerMeal(){
- let t=document.getElementById("txt").value.trim(); if(!t)return;
- let r=parseMeal(t); if(!r.found.length){document.getElementById("parse").textContent="Não reconheci o suficiente. Use a correção manual.";return}
- let s=document.getElementById("slot").value; S.actual[s]={...r.x,desc:t}; save();document.getElementById("txt").value="";
- document.getElementById("parse").textContent="Registrado em "+names[s]+": "+r.found.join(", ")+". Restante do dia recalculado.";render();
+function totals(k=dateKey()){
+  const d=ensureDay(k);
+  return d.entries.reduce((s,e)=>({kcal:s.kcal+e.kcal,p:s.p+e.p,c:s.c+e.c,f:s.f+e.f}),{kcal:0,p:0,c:0,f:0});
 }
-function manual(){
- let s=document.getElementById("slot").value;
- S.actual[s]={k:+document.getElementById("mk").value||0,p:+document.getElementById("mp").value||0,c:+document.getElementById("mc").value||0,f:+document.getElementById("mf").value||0,desc:"Lançamento manual"};
- save();render();
+function round(n){return Math.round(n)}
+function pct(v,t){return Math.min(100,Math.max(0,(v/t)*100))}
+function setBar(id,v,t){document.getElementById(id).style.width=pct(v,t)+"%"}
+function normalize(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function findNumberBefore(text, key){
+  const ntext=normalize(text), nkey=normalize(key);
+  const idx=ntext.indexOf(nkey);
+  if(idx<0) return null;
+  const pre=ntext.slice(Math.max(0,idx-25),idx);
+  let m=pre.match(/(\d+(?:[.,]\d+)?)\s*(g|ml|un|unidade|unidades|fatia|fatias)?\s*$/);
+  if(m) return {num:parseFloat(m[1].replace(",",".")),unit:m[2]||""};
+  if(/1\/4\s*(de\s*)?$/.test(pre) || /um quarto\s*(de\s*)?$/.test(pre)) return {num:.25,unit:"fraction"};
+  if(/1\/2\s*(de\s*)?$/.test(pre) || /meio\s*(de\s*)?$/.test(pre)) return {num:.5,unit:"fraction"};
+  return null;
 }
-function sum(){
- let x={k:0,p:0,c:0,f:0};
- Object.values(S.actual).forEach(a=>{for(const z of ["k","p","c","f"])x[z]+=a[z]||0});return x;
+function parseMeal(text){
+  let total={kcal:0,p:0,c:0,f:0}, found=[];
+  const nt=normalize(text);
+  for(const food of FOOD_DB){
+    let matchedKey=null;
+    for(const k of food.keys){ if(nt.includes(normalize(k))){matchedKey=k;break} }
+    if(!matchedKey) continue;
+    const q=findNumberBefore(text,matchedKey);
+    let mult=1, detail="";
+    if(food.unit==="100g"){
+      if(q && q.unit==="g"){mult=q.num/100;detail=q.num+" g"}
+      else if(q && q.unit==="fraction" && normalize(matchedKey).includes("mamao")){mult=q.num*3.5;detail="fração estimada"}
+      else {mult=1;detail="100 g estimados"}
+    } else if(food.unit==="10g"){
+      if(q && q.unit==="g"){mult=q.num/10;detail=q.num+" g"} else {mult=1}
+    } else if(food.unit==="150ml"){
+      if(q && q.unit==="ml"){mult=q.num/150;detail=q.num+" ml"} 
+      else if(q){mult=q.num;detail=q.num+" taça(s)"} else mult=1;
+    } else {
+      if(q && q.num){mult=q.num;detail=q.num+" "+food.unit}
+    }
+    total.kcal+=food.kcal*mult; total.p+=food.p*mult; total.c+=food.c*mult; total.f+=food.f*mult;
+    found.push((detail?detail+" ":"")+matchedKey);
+  }
+  return {total,found};
 }
-function remainingSlots(){return order.filter(s=>!S.actual[s])}
-function allocations(){
- let used=sum(), rem={k:Math.max(0,targets.k-used.k),p:Math.max(0,targets.p-used.p),c:Math.max(0,targets.c-used.c),f:Math.max(0,targets.f-used.f)};
- let slots=remainingSlots(), wsum=slots.reduce((a,s)=>a+baseWeights[s],0), a={};
- slots.forEach(s=>{
-   let w=baseWeights[s]/wsum;
-   // Proteína é distribuída com um piso prático e sem jogar tudo na última refeição
-   a[s]={k:rem.k*w,p:rem.p*w,c:rem.c*w,f:rem.f*w};
- });
- return {used,rem,a};
-}
-function foodSuggestion(s,m){
- let k=Math.round(m.k), p=Math.round(m.p), c=Math.round(m.c), f=Math.round(m.f);
- if(s==="cafe")return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Ex.: ovos + pão/aveia + fruta; ajuste queijo/claras conforme a proteína e gordura restantes.`;
- if(s==="almoco")return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Priorize ~160–200 g de proteína magra; complete com arroz/batata + feijão/legumes e ajuste azeite conforme a gordura disponível.`;
- if(s==="lanche")return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Faça uma fonte proteica + fruta e uma porção de pão/aveia conforme o carboidrato restante.`;
- return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Priorize ~180–200 g de proteína magra; use batata/arroz conforme carboidratos restantes e controle o azeite conforme gordura disponível.`;
+function addEntry(desc,macros,source){
+  const d=ensureDay();
+  d.entries.push({id:Date.now()+Math.random(),desc,source,...macros,ts:new Date().toISOString()});
+  save(); render();
 }
 function render(){
- let {used,rem,a}=allocations();
- document.getElementById("goalK").textContent=targets.k+" kcal";
- document.getElementById("usedK").textContent=Math.round(used.k)+" kcal";
- document.getElementById("usedP").textContent=Math.round(used.p)+" / "+targets.p+" g";
- document.getElementById("leftK").textContent=Math.round(targets.k-used.k)+" kcal";
- let over=used.k-targets.k;
- document.getElementById("dayMsg").innerHTML=over>0?`Você passou aproximadamente <b>${Math.round(over)} kcal</b> da meta. O agente não vai zerar comida nem fazer compensação extrema; vai priorizar proteína e manter o restante do dia mais leve.`:
- `Faltam aproximadamente <b>${Math.round(rem.k)} kcal</b>, <b>${Math.round(rem.p)} g de proteína</b>, <b>${Math.round(rem.c)} g de carboidratos</b> e <b>${Math.round(rem.f)} g de gorduras</b> para hoje.`;
- document.getElementById("plan").innerHTML=order.map(s=>{
-   let ac=S.actual[s];
-   if(ac)return `<div class="meal"><div class="mealhead"><b>${names[s]}</b><span class="pill">feito</span></div><div class="actual">${ac.desc}<br><span class="small">${Math.round(ac.k)} kcal • P ${Math.round(ac.p)} • C ${Math.round(ac.c)} • G ${Math.round(ac.f)}</span></div></div>`;
-   let m=a[s]||{k:0,p:0,c:0,f:0};
-   return `<div class="meal"><div class="mealhead"><b>${names[s]}</b><span class="pill">recalculado</span></div><div class="foodplan">${foodSuggestion(s,m)}</div></div>`;
- }).join("");
+  const k=dateKey(), t=targetFor(k), x=totals(k);
+  document.getElementById("dateTitle").textContent="Hoje • "+new Date().toLocaleDateString("pt-BR");
+  document.getElementById("kcalVal").textContent=`${round(x.kcal)} / ${round(t.kcal)}`;
+  document.getElementById("protVal").textContent=`${round(x.p)} / ${t.p} g`;
+  document.getElementById("carbVal").textContent=`${round(x.c)} / ${t.c} g`;
+  document.getElementById("fatVal").textContent=`${round(x.f)} / ${t.f} g`;
+  setBar("kcalBar",x.kcal,t.kcal); setBar("protBar",x.p,t.p); setBar("carbBar",x.c,t.c); setBar("fatBar",x.f,t.f);
+  const rem=t.kcal-x.kcal;
+  let msg="";
+  if(rem>500) msg=`Restam aproximadamente <b>${round(rem)} kcal</b> hoje. Proteína restante: <b>${Math.max(0,round(t.p-x.p))} g</b>.`;
+  else if(rem>=0) msg=`Você ainda tem cerca de <b>${round(rem)} kcal</b> disponíveis hoje. Priorize proteína e ajuste carbo/gordura conforme o restante.`;
+  else msg=`Você está cerca de <b>${round(-rem)} kcal acima</b> da meta de hoje. Não faça corte agressivo agora; o excedente pode ser parcialmente diluído nos próximos dias.`;
+  if(t.adjustment) msg+=` Meta de hoje já inclui ajuste de <b>${t.adjustment>0?"+":""}${round(t.adjustment)} kcal</b>.`;
+  document.getElementById("todayAdvice").innerHTML=msg;
+
+  const entries=ensureDay(k).entries;
+  document.getElementById("entries").innerHTML=entries.length?entries.map(e=>`
+    <div class="entry">
+      <div class="top"><b>${e.desc}</b><button class="danger" style="padding:5px 8px" onclick="removeEntry('${e.id}')">×</button></div>
+      <div class="small">${round(e.kcal)} kcal • P ${round(e.p)} g • C ${round(e.c)} g • G ${round(e.f)} g ${e.source==="estimate"?"• estimado":""}</div>
+    </div>`).join(""):`<div class="small">Nenhuma refeição registrada.</div>`;
+
+  renderWeek(); renderAdjustments();
+  document.getElementById("setKcal").value=state.settings.kcal;
+  document.getElementById("setProt").value=state.settings.p;
+  document.getElementById("setCarb").value=state.settings.c;
+  document.getElementById("setFat").value=state.settings.f;
 }
+window.removeEntry=function(id){
+  const d=ensureDay(); d.entries=d.entries.filter(e=>String(e.id)!==String(id)); save(); render();
+}
+function renderWeek(){
+  let dates=[]; for(let i=6;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);dates.push(dateKey(d))}
+  let sum=0,target=0;
+  const rows=dates.map(k=>{
+    const x=totals(k), t=targetFor(k); sum+=x.kcal; target+=t.kcal;
+    const diff=x.kcal-t.kcal;
+    return `<div class="entry"><div class="top"><b>${brDate(k)}</b><span class="badge">${round(x.kcal)} kcal</span></div>
+      <div class="small">Meta ${round(t.kcal)} • saldo ${diff>0?"+":""}${round(diff)} kcal</div></div>`;
+  }).join("");
+  const delta=sum-target;
+  document.getElementById("weekSummary").innerHTML=`<div class="metric"><span>Consumido / meta ajustada</span><b>${round(sum)} / ${round(target)} kcal</b>
+  <div class="${Math.abs(delta)<300?"good":delta>0?"warn":"good"}">Saldo: ${delta>0?"+":""}${round(delta)} kcal</div></div>`;
+  document.getElementById("weekList").innerHTML=rows;
+}
+function renderAdjustments(){
+  const keys=Object.keys(state.adjustments).filter(k=>k>=dateKey()).sort().slice(0,7);
+  document.getElementById("futureAdjustments").innerHTML=keys.length?keys.map(k=>`<div class="entry"><b>${brDate(k)}</b><div class="small">${state.adjustments[k]>0?"+":""}${round(state.adjustments[k])} kcal sobre a meta-base</div></div>`).join(""):`<div class="small">Nenhum ajuste programado.</div>`;
+}
+
+const voiceBtn=document.getElementById("voiceBtn");
+const voiceStatus=document.getElementById("voiceStatus");
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recognition=null;
+let listening=false;
+let voiceBaseText="";
+
+function setVoiceState(on,msg){
+  listening=on;
+  voiceBtn.classList.toggle("listening",on);
+  voiceBtn.textContent=on?"⏹️ Parar":"🎙️ Falar";
+  if(msg)voiceStatus.textContent=msg;
+}
+
+if(SpeechRecognition){
+  recognition=new SpeechRecognition();
+  recognition.lang="pt-BR";
+  recognition.continuous=true;
+  recognition.interimResults=true;
+
+  recognition.onstart=()=>{
+    voiceBaseText=document.getElementById("mealText").value.trim();
+    setVoiceState(true,"Ouvindo… fale normalmente.");
+  };
+
+  recognition.onresult=(event)=>{
+    let finalText="";
+    let interimText="";
+    for(let i=event.resultIndex;i<event.results.length;i++){
+      const t=event.results[i][0].transcript.trim();
+      if(event.results[i].isFinal) finalText+=(finalText?" ":"")+t;
+      else interimText+=(interimText?" ":"")+t;
+    }
+    const ta=document.getElementById("mealText");
+    const spoken=[finalText,interimText].filter(Boolean).join(" ");
+    ta.value=[voiceBaseText,spoken].filter(Boolean).join(voiceBaseText&&spoken?", ":"");
+  };
+
+  recognition.onerror=(event)=>{
+    const map={
+      "not-allowed":"Permita o acesso ao microfone para este site.",
+      "service-not-allowed":"O reconhecimento de voz foi bloqueado pelo navegador.",
+      "no-speech":"Não ouvi nenhuma fala. Toque e tente novamente.",
+      "audio-capture":"Não consegui acessar o microfone."
+    };
+    setVoiceState(false,map[event.error]||("Erro no microfone: "+event.error));
+  };
+
+  recognition.onend=()=>{
+    setVoiceState(false,"Pronto. Você pode editar o texto ou registrar a refeição.");
+  };
+
+  voiceBtn.onclick=()=>{
+    try{
+      if(listening) recognition.stop();
+      else recognition.start();
+    }catch(e){
+      setVoiceState(false,"Não consegui iniciar o microfone. Recarregue a página e tente novamente.");
+    }
+  };
+}else{
+  voiceBtn.onclick=()=>{
+    voiceStatus.textContent="Este navegador não oferece reconhecimento de voz nesta página.";
+    alert("O reconhecimento de voz não está disponível neste navegador. No iPhone, abra pelo Safari e use a versão mais recente do iOS.");
+  };
+}
+
+document.getElementById("estimateBtn").onclick=()=>{
+  const text=document.getElementById("mealText").value.trim(); if(!text)return;
+  const r=parseMeal(text);
+  if(!r.found.length){document.getElementById("parseInfo").textContent="Não reconheci alimentos suficientes. Use o lançamento manual para esta refeição.";return}
+  addEntry(text,r.total,"estimate");
+  document.getElementById("parseInfo").textContent="Reconhecido: "+r.found.join(", ")+".";
+  document.getElementById("mealText").value="";
+}
+document.getElementById("manualBtn").onclick=()=>{
+  const vals=["mKcal","mProt","mCarb","mFat"].map(id=>parseFloat(document.getElementById(id).value)||0);
+  const desc=document.getElementById("mDesc").value.trim()||"Lançamento manual";
+  addEntry(desc,{kcal:vals[0],p:vals[1],c:vals[2],f:vals[3]},"manual");
+  ["mKcal","mProt","mCarb","mFat","mDesc"].forEach(id=>document.getElementById(id).value="");
+}
+document.querySelectorAll(".quick button").forEach(b=>b.onclick=()=>{
+  const ta=document.getElementById("mealText"); ta.value+=(ta.value?", ":"")+b.dataset.q;
+});
+document.getElementById("closeDay").onclick=()=>{
+  const k=dateKey(), d=ensureDay(k), x=totals(k), t=targetFor(k);
+  d.closed=true;
+  const diff=x.kcal-t.kcal;
+  // limpa futuros ajustes gerados automaticamente próximos 4 dias apenas se zero? preserva existentes.
+  if(diff>150){
+    // Compensa só parte do excesso: 40%, no máx 450 kcal, distribuído com limite de -150/dia.
+    let remaining=Math.min(diff*0.40,450);
+    for(let i=1;i<=4 && remaining>1;i++){
+      let dt=new Date();dt.setDate(dt.getDate()+i);let dk=dateKey(dt);
+      let cut=Math.min(150,remaining);
+      state.adjustments[dk]=(state.adjustments[dk]||0)-cut; remaining-=cut;
+    }
+  } else if(diff<-300){
+    // Déficit grande: devolve parcialmente energia, sem compensar integralmente.
+    let dt=new Date();dt.setDate(dt.getDate()+1);let dk=dateKey(dt);
+    state.adjustments[dk]=(state.adjustments[dk]||0)+Math.min(100,(-diff)*0.25);
+  }
+  save();render();
+  alert("Dia fechado. Próximas metas foram recalculadas de forma conservadora.");
+}
+document.getElementById("saveSettings").onclick=()=>{
+  state.settings={
+    kcal:parseFloat(document.getElementById("setKcal").value)||2000,
+    p:parseFloat(document.getElementById("setProt").value)||170,
+    c:parseFloat(document.getElementById("setCarb").value)||198,
+    f:parseFloat(document.getElementById("setFat").value)||60
+  };save();render();
+}
+document.getElementById("resetAll").onclick=()=>{
+  if(confirm("Apagar todos os registros e ajustes?")){localStorage.removeItem("ld_nutri_state");location.reload()}
+}
+document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
+  ["hoje","semana","ajustes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==btn.dataset.tab));
+});
 render();
 </script>
 </body>
