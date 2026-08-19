@@ -116,7 +116,7 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
 <div class="wrap">
   <header>
     <h1>Agente Nutricional LD</h1>
-    <div class="sub">Plano-base: ~2.000 kcal • proteína protegida • ajuste diário e semanal • Foundation 0.1</div>
+    <div class="sub">Plano-base: ~2.000 kcal • proteína protegida • ajuste diário e semanal</div>
   </header>
 
   <div class="tabs">
@@ -473,7 +473,7 @@ label{font-size:13px;color:var(--muted);display:block;margin:8px 0 5px}
       <div id="futureAdjustments"></div>
     </div>
     <div class="card">
-      <button class="danger" id="resetAll" style="width:100%">Apagar dados nutricionais</button>
+      <button class="danger" id="resetAll" style="width:100%">Apagar todos os dados</button>
     </div>
   </section>
 
@@ -526,70 +526,19 @@ if(LD_CLOUD_READY && window.supabase){
   });
 }
 
-const LEGACY_STORAGE_KEY="ld_nutri_state";
-let activeStorageKey="ld_nutri_state_guest";
-
-function defaultState(){
-  return {
-    settings:{kcal:2000,p:170,c:198,f:60,exerciseCompPct:60},
-    days:{},
-    adjustments:{},
-    profile:{name:"",goal:"emagrecimento",weight:"",height:"",prefs:""},
-    diets:[],
-    checkins:[],
-    favoriteMeals:[],
-    meta:{schemaVersion:3,foundation:"0.1"}
-  };
-}
-function readLocalState(key){
-  try{
-    const raw=localStorage.getItem(key);
-    return raw?JSON.parse(raw):null;
-  }catch(e){ return null; }
-}
-function replaceStateObject(next){
-  const safe=(next && typeof next==="object")?next:defaultState();
-  Object.keys(state).forEach(k=>delete state[k]);
-  Object.assign(state,safe);
-  if(!state.settings) state.settings={kcal:2000,p:170,c:198,f:60,exerciseCompPct:60};
-  if(state.settings.exerciseCompPct==null) state.settings.exerciseCompPct=60;
-  if(!state.days) state.days={};
-  if(!state.adjustments) state.adjustments={};
-  if(!state.profile) state.profile={name:"",goal:"emagrecimento",weight:"",height:"",prefs:""};
-  if(!state.diets) state.diets=[];
-  if(!state.checkins) state.checkins=[];
-  if(!state.favoriteMeals) state.favoriteMeals=[];
-  if(!state.meta) state.meta={schemaVersion:3,foundation:"0.1"};
-}
-function storageKeyForUser(userId){
-  return userId?`ld_nutri_state_user_${userId}`:"ld_nutri_state_guest";
-}
-function activateUserStorage(userId,{allowLegacyMigration=false}={}){
-  activeStorageKey=storageKeyForUser(userId);
-  let local=readLocalState(activeStorageKey);
-  if(!local && allowLegacyMigration){
-    local=readLocalState(LEGACY_STORAGE_KEY);
-  }
-  replaceStateObject(local||defaultState());
-}
-function escapeHTML(value){
-  return String(value??"")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-const initialLocalState=readLocalState(activeStorageKey)||readLocalState(LEGACY_STORAGE_KEY)||defaultState();
-const state = initialLocalState;
+const state = JSON.parse(localStorage.getItem("ld_nutri_state") || "null") || {
+  settings:{kcal:2000,p:170,c:198,f:60},
+  days:{},
+  adjustments:{}
+};
 
 if(!state.settings) state.settings={kcal:2000,p:170,c:198,f:60};
+
 if(!state.profile) state.profile={name:"",goal:"emagrecimento",weight:"",height:"",prefs:""};
 if(!state.diets) state.diets=[];
 if(!state.checkins) state.checkins=[];
 if(!state.favoriteMeals) state.favoriteMeals=[];
-if(!state.meta) state.meta={schemaVersion:3,foundation:"0.1"};
+if(!state.meta) state.meta={schemaVersion:2};
 
 function ensureInitialDiet(){
   if(state.diets.length) return;
@@ -645,15 +594,10 @@ function exerciseCreditFor(k=dateKey()){
 
 
 function save(){
-  localStorage.setItem(activeStorageKey, JSON.stringify(state));
+  localStorage.setItem("ld_nutri_state", JSON.stringify(state));
   scheduleCloudSave();
 }
-function dateKey(d=new Date()){
-  const y=d.getFullYear();
-  const m=String(d.getMonth()+1).padStart(2,"0");
-  const day=String(d.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
-}
+function dateKey(d=new Date()){return d.toISOString().slice(0,10)}
 function brDate(k){return new Date(k+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"})}
 function ensureDay(k=dateKey()){
   if(!state.days[k]) state.days[k]={entries:[],closed:false};
@@ -699,42 +643,13 @@ function findNumberBefore(text, key){
   if(/1\/2\s*(de\s*)?$/.test(pre) || /meio\s*(de\s*)?$/.test(pre)) return {num:.5,unit:"fraction"};
   return null;
 }
-function preparationAmbiguities(text){
-  const nt=normalize(text);
-  const issues=[];
-  const fried=/\b(frit[oa]s?|frito|frita|empanad[oa]s?|a milanesa)\b/.test(nt);
-  const airfryer=/air\s*fryer|airfryer/.test(nt);
-
-  if(fried && !airfryer){
-    if(/\bbatata\b/.test(nt)) issues.push("batata frita");
-    if(/\bovo(s)?\b/.test(nt)) issues.push("ovo frito");
-    if(/\bfrango\b/.test(nt)) issues.push("frango frito/empanado");
-  }
-  if(/\bmolho\b|\blasanh|\brisoto|\bhamburg|\bsanduich|\bbolo\b|\btorta\b|\bsopa\b/.test(nt)){
-    issues.push("preparação composta");
-  }
-  return [...new Set(issues)];
-}
-
 function parseMeal(text){
   let total={kcal:0,p:0,c:0,f:0}, found=[];
   const nt=normalize(text);
-  const ambiguities=preparationAmbiguities(text);
-
   for(const food of FOOD_DB){
     let matchedKey=null;
     for(const k of food.keys){ if(nt.includes(normalize(k))){matchedKey=k;break} }
     if(!matchedKey) continue;
-
-    // Não usar a base provisória quando o preparo altera materialmente o valor.
-    const nk=normalize(matchedKey);
-    if(ambiguities.some(a=>{
-      const na=normalize(a);
-      return (na.includes("batata")&&nk.includes("batata")) ||
-             (na.includes("ovo")&&nk.includes("ovo")) ||
-             (na.includes("frango")&&nk.includes("frango"));
-    })) continue;
-
     const q=findNumberBefore(text,matchedKey);
     let mult=1, detail="";
     if(food.unit==="100g"){
@@ -744,7 +659,7 @@ function parseMeal(text){
     } else if(food.unit==="10g"){
       if(q && q.unit==="g"){mult=q.num/10;detail=q.num+" g"} else {mult=1}
     } else if(food.unit==="150ml"){
-      if(q && q.unit==="ml"){mult=q.num/150;detail=q.num+" ml"}
+      if(q && q.unit==="ml"){mult=q.num/150;detail=q.num+" ml"} 
       else if(q){mult=q.num;detail=q.num+" taça(s)"} else mult=1;
     } else {
       if(q && q.num){mult=q.num;detail=q.num+" "+food.unit}
@@ -752,7 +667,7 @@ function parseMeal(text){
     total.kcal+=food.kcal*mult; total.p+=food.p*mult; total.c+=food.c*mult; total.f+=food.f*mult;
     found.push((detail?detail+" ":"")+matchedKey);
   }
-  return {total,found,ambiguities,source:"base interna provisória"};
+  return {total,found};
 }
 function addEntry(desc,macros,source){
   const d=ensureDay();
@@ -937,17 +852,10 @@ function registerSpokenMeal(text){
   const clean=(text||"").trim();
   if(!clean) return false;
   const r=parseMeal(clean);
-  if(r.ambiguities?.length){
-    document.getElementById("mealText").value=clean;
-    document.getElementById("parseInfo").textContent=
-      "Não registrei automaticamente porque o preparo muda muito o valor nutricional ("+
-      r.ambiguities.join(", ")+"). A Foundation não vai inventar calorias: revise ou faça lançamento manual até o motor online estar ativo.";
-    return false;
-  }
   if(!r.found.length){
     document.getElementById("mealText").value=clean;
     document.getElementById("parseInfo").textContent=
-      "Ouvi: “"+clean+"”, mas não reconheci alimentos suficientes com segurança. Revise o texto ou use o lançamento manual.";
+      "Ouvi: “"+clean+"”, mas não reconheci alimentos suficientes. Revise o texto ou use o lançamento manual.";
     return false;
   }
 
@@ -987,7 +895,7 @@ function render(){
   const entries=ensureDay(k).entries;
   document.getElementById("entries").innerHTML=entries.length?entries.map(e=>`
     <div class="entry">
-      <div class="top"><b>${escapeHTML(e.desc)}</b><button class="danger" style="padding:5px 8px" onclick="removeEntry('${e.id}')">×</button></div>
+      <div class="top"><b>${e.desc}</b><button class="danger" style="padding:5px 8px" onclick="removeEntry('${e.id}')">×</button></div>
       <div class="small">${round(e.kcal)} kcal • P ${round(e.p)} g • C ${round(e.c)} g • G ${round(e.f)} g ${e.source==="estimate"?"• estimado":e.source==="voice"?"• voz":""}</div>
     </div>`).join(""):`<div class="small">Nenhuma refeição registrada.</div>`;
 
@@ -1028,9 +936,17 @@ function uid2(prefix="X"){return prefix+Date.now().toString(36)+Math.random().to
 function replaceStateFromCloud(remote){
   if(!remote || typeof remote!=="object") return;
   cloudLoading=true;
-  replaceStateObject(remote);
+  Object.keys(state).forEach(k=>delete state[k]);
+  Object.assign(state,remote);
+  if(!state.settings) state.settings={kcal:2000,p:170,c:198,f:60,exerciseCompPct:60};
+  if(!state.days) state.days={};
+  if(!state.adjustments) state.adjustments={};
+  if(!state.profile) state.profile={name:"",goal:"emagrecimento",weight:"",height:"",prefs:""};
+  if(!state.diets) state.diets=[];
+  if(!state.checkins) state.checkins=[];
+  if(!state.favoriteMeals) state.favoriteMeals=[];
   ensureInitialDiet();
-  localStorage.setItem(activeStorageKey,JSON.stringify(state));
+  localStorage.setItem("ld_nutri_state",JSON.stringify(state));
   cloudLoading=false;
 }
 
@@ -1066,13 +982,7 @@ async function loadStateFromCloud(){
   if(data?.state && Object.keys(data.state).length){
     replaceStateFromCloud(data.state);
   }else{
-    // Conta nova nunca herda silenciosamente os dados de outro usuário/dispositivo.
-    cloudLoading=true;
-    replaceStateObject(defaultState());
-    ensureInitialDiet();
-    localStorage.setItem(activeStorageKey,JSON.stringify(state));
-    cloudLoading=false;
-    await saveStateToCloud();
+    await saveStateToCloud(); // migra automaticamente os dados locais da primeira conta
   }
   render(); renderProfileV2(); renderCheckinsV2(); renderReport();
 }
@@ -1130,7 +1040,7 @@ async function renderCloudAccount(){
     return;
   }
   status.className="cloudStatus ok";
-  status.textContent="Conta conectada • armazenamento isolado por usuário • sincronização ativa.";
+  status.textContent="Conta conectada • dados separados e sincronizados.";
   out?.classList.add("hidden"); inn?.classList.remove("hidden");
   document.getElementById("cloudUserEmail").textContent=cloudUser.email||"";
   document.getElementById("cloudUserName").textContent=cloudProfile?.name||state.profile?.name||"Conta LD";
@@ -1150,7 +1060,6 @@ async function initCloud(){
   const {data}=await ldCloud.auth.getSession();
   cloudUser=data?.session?.user||null;
   if(cloudUser){
-    activateUserStorage(cloudUser.id);
     try{await ensureCloudProfile(); await loadStateFromCloud();}catch(e){console.error(e);}
   }
   await renderCloudAccount();
@@ -1158,15 +1067,9 @@ async function initCloud(){
     const prior=cloudUser?.id;
     cloudUser=session?.user||null;
     if(cloudUser && cloudUser.id!==prior){
-      activateUserStorage(cloudUser.id);
       try{await ensureCloudProfile(); await loadStateFromCloud();}catch(e){console.error(e);}
     }
-    if(!cloudUser){
-      cloudProfile=null;
-      activateUserStorage(null);
-      ensureInitialDiet();
-      render(); renderProfileV2(); renderCheckinsV2(); renderReport();
-    }
+    if(!cloudUser) cloudProfile=null;
     await renderCloudAccount();
   });
 }
@@ -1186,7 +1089,7 @@ async function cloudSignup(){
   });
   if(error) return setAuthMsg(error.message);
   if(data?.session){
-    cloudUser=data.user; activateUserStorage(cloudUser.id); await ensureCloudProfile(type); await loadStateFromCloud(); await renderCloudAccount();
+    cloudUser=data.user; await ensureCloudProfile(type); await loadStateFromCloud(); await renderCloudAccount();
     setAuthMsg("Conta criada e conectada.");
   }else setAuthMsg("Conta criada. Confira seu e-mail para confirmar o cadastro.");
 }
@@ -1196,17 +1099,12 @@ async function cloudSignin(){
   const password=document.getElementById("authPassword").value;
   const {data,error}=await ldCloud.auth.signInWithPassword({email,password});
   if(error) return setAuthMsg(error.message);
-  cloudUser=data.user; activateUserStorage(cloudUser.id); await ensureCloudProfile(); await loadStateFromCloud(); await renderCloudAccount();
+  cloudUser=data.user; await ensureCloudProfile(); await loadStateFromCloud(); await renderCloudAccount();
   setAuthMsg("Conectado.");
 }
 async function cloudSignout(){
   if(ldCloud) await ldCloud.auth.signOut();
-  cloudUser=null;
-  cloudProfile=null;
-  activateUserStorage(null);
-  ensureInitialDiet();
-  render(); renderProfileV2(); renderCheckinsV2(); renderReport();
-  renderCloudAccount();
+  cloudUser=null; cloudProfile=null; renderCloudAccount();
 }
 function setAuthMsg(s){const e=document.getElementById("authMessage");if(e)e.textContent=s;}
 async function linkCoachByCode(){
@@ -1263,9 +1161,9 @@ async function renderCoachDashboard(){
     const rr=(reports||[]).filter(r=>r.student_id===id);
     const latest=rr[0];
     return `<div class="cloudStudent">
-      <div class="top"><b>${escapeHTML(names[id]||"Aluno")}</b><span class="badge">${rr.length} relatório(s)</span></div>
+      <div class="top"><b>${names[id]||"Aluno"}</b><span class="badge">${rr.length} relatório(s)</span></div>
       ${latest?`<div class="small" style="margin-top:6px">Último: ${latest.period_type==="month"?"mensal":"semanal"} • ${latest.start_date} a ${latest.end_date}</div>
-      <div class="small">${escapeHTML(latest.report?.interpretation||"")}</div>`:`<div class="small" style="margin-top:6px">Ainda não enviou relatório.</div>`}
+      <div class="small">${latest.report?.interpretation||""}</div>`:`<div class="small" style="margin-top:6px">Ainda não enviou relatório.</div>`}
     </div>`;
   }).join("");
 }
@@ -1297,15 +1195,15 @@ function renderProfileV2(){
   if(byId("dietHistory")){
     const list=[...state.diets].sort((a,b)=>String(b.start).localeCompare(String(a.start)));
     byId("dietHistory").innerHTML=list.map(d=>`<div class="v2entry">
-      <div class="top"><b>${escapeHTML(d.name)}</b><span class="v2pill">${d.start}${d.end?" → "+d.end:" → atual"}</span></div>
+      <div class="top"><b>${d.name}</b><span class="v2pill">${d.start}${d.end?" → "+d.end:" → atual"}</span></div>
       <div class="small">${d.kcal} kcal • P ${d.p} g • C ${d.c} g • G ${d.f} g</div>
     </div>`).join("");
   }
 
   if(byId("favMealList")){
     byId("favMealList").innerHTML=state.favoriteMeals.length?state.favoriteMeals.map(f=>`<div class="v2entry">
-      <div class="top"><b>${escapeHTML(f.name)}</b><button class="secondary" onclick="useFavMeal('${f.id}')">Usar</button></div>
-      <div class="small">${escapeHTML(f.desc)}</div>
+      <div class="top"><b>${f.name}</b><button class="secondary" onclick="useFavMeal('${f.id}')">Usar</button></div>
+      <div class="small">${f.desc}</div>
     </div>`).join(""):`<div class="small">Nenhuma refeição favorita.</div>`;
   }
 }
@@ -1368,7 +1266,7 @@ function renderCheckinsV2(){
   el.innerHTML=list.length?list.map(c=>`<div class="v2entry">
     <div class="top"><b>${fmtBR(c.date)}</b><span class="v2pill">${c.weight||"—"} kg</span></div>
     <div class="small">Fome ${c.hunger||"—"}/5 • Energia ${c.energy||"—"}/5 • Sono ${c.sleep||"—"}/5 • Dificuldade ${c.difficulty||"—"}/5 • Treinos ${c.training??"—"}</div>
-    ${c.note?`<div class="small" style="margin-top:4px">${escapeHTML(c.note)}</div>`:""}
+    ${c.note?`<div class="small" style="margin-top:4px">${c.note}</div>`:""}
   </div>`).join(""):`<div class="small">Nenhum check-in salvo.</div>`;
 
   const s=document.getElementById("checkinSummary");
@@ -1618,15 +1516,9 @@ function renderAdjustments(){
 const voiceBtn=document.getElementById("voiceBtn");
 const voiceStatus=document.getElementById("voiceStatus");
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-
 let recognition=null;
 let listening=false;
-let userRequestedStop=false;
-let voiceFinalText="";
-let voiceInterimText="";
-let voiceBaseText="";
-let voiceRestartTimer=null;
-let voiceHardStopTimer=null;
+let stopTimer=null;
 
 function setVoiceState(on,msg){
   listening=on;
@@ -1635,140 +1527,90 @@ function setVoiceState(on,msg){
   if(msg) voiceStatus.textContent=msg;
 }
 
-function voiceCurrentText(){
-  return [voiceFinalText.trim(),voiceInterimText.trim()].filter(Boolean).join(" ").trim();
-}
-function showVoiceText(){
+function appendTranscript(text){
   const ta=document.getElementById("mealText");
-  const spoken=voiceCurrentText();
-  ta.value=[voiceBaseText,spoken].filter(Boolean).join(voiceBaseText&&spoken?", ":"");
-}
-function finishVoiceCapture(){
-  clearTimeout(voiceRestartTimer);
-  clearTimeout(voiceHardStopTimer);
-  const spoken=voiceFinalText.trim()||voiceInterimText.trim();
-  setVoiceState(false,spoken?"Processando o que você falou…":"Não ouvi nenhuma fala.");
-  recognition=null;
-  if(!spoken) return;
-
-  const out=registerVoiceInput(spoken);
-  if(out.type==="exercise"){
-    voiceStatus.textContent="Gasto do treino registrado e meta recalculada.";
-  }else{
-    voiceStatus.textContent=out.ok
-      ?"Refeição registrada e plano recalculado."
-      :"Texto reconhecido. Confira antes de registrar.";
-  }
-  voiceFinalText="";
-  voiceInterimText="";
-}
-
-function buildRecognition(){
-  const r=new SpeechRecognition();
-  r.lang="pt-BR";
-  r.continuous=true;
-  r.interimResults=true;
-  r.maxAlternatives=1;
-
-  r.onstart=()=>{
-    setVoiceState(true,"Ouvindo… fale tudo. Toque em Parar quando terminar.");
-  };
-
-  r.onresult=(event)=>{
-    voiceInterimText="";
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      const txt=(event.results[i]?.[0]?.transcript||"").trim();
-      if(!txt) continue;
-      if(event.results[i].isFinal){
-        voiceFinalText+=(voiceFinalText?" ":"")+txt;
-      }else{
-        voiceInterimText+=(voiceInterimText?" ":"")+txt;
-      }
-    }
-    showVoiceText();
-  };
-
-  r.onerror=(event)=>{
-    if(event.error==="aborted" && userRequestedStop) return;
-    const map={
-      "not-allowed":"Permita o acesso ao microfone para este site.",
-      "service-not-allowed":"O reconhecimento de voz foi bloqueado pelo Safari.",
-      "no-speech":"Não ouvi fala. Continue falando ou toque em Parar.",
-      "audio-capture":"Não consegui acessar o microfone.",
-      "network":"Falha de rede durante o reconhecimento."
-    };
-    voiceStatus.textContent=map[event.error]||("Erro no microfone: "+event.error);
-  };
-
-  r.onend=()=>{
-    recognition=null;
-    if(userRequestedStop){
-      finishVoiceCapture();
-      return;
-    }
-    // Safari pode encerrar a sessão após uma pausa; reinicia enquanto o usuário não mandar parar.
-    voiceRestartTimer=setTimeout(()=>{
-      if(!userRequestedStop && listening){
-        try{
-          recognition=buildRecognition();
-          recognition.start();
-        }catch(e){
-          setVoiceState(false,"O navegador interrompeu o microfone. Toque em Falar para continuar.");
-        }
-      }
-    },250);
-  };
-  return r;
+  const clean=(text||"").trim();
+  if(!clean) return;
+  ta.value=[ta.value.trim(), clean].filter(Boolean).join(ta.value.trim()?", ":"");
+  ta.focus();
 }
 
 if(SpeechRecognition){
   function startVoiceRecognition(){
-    if(listening){
-      userRequestedStop=true;
-      clearTimeout(voiceRestartTimer);
-      clearTimeout(voiceHardStopTimer);
-      try{
-        if(recognition) recognition.stop();
-        else finishVoiceCapture();
-      }catch(e){ finishVoiceCapture(); }
+    if(listening && recognition){
+      try{ recognition.stop(); }catch(e){}
       return;
     }
 
-    userRequestedStop=false;
-    voiceFinalText="";
-    voiceInterimText="";
-    voiceBaseText=document.getElementById("mealText").value.trim();
-
     try{
-      recognition=buildRecognition();
-      recognition.start();
-      voiceHardStopTimer=setTimeout(()=>{
-        if(listening){
-          userRequestedStop=true;
-          try{
-            if(recognition) recognition.stop();
-            else finishVoiceCapture();
-          }catch(e){ finishVoiceCapture(); }
+      recognition=new SpeechRecognition();
+      recognition.lang="pt-BR";
+      recognition.continuous=false;
+      recognition.interimResults=false;
+      recognition.maxAlternatives=1;
+
+      recognition.onstart=()=>{
+        setVoiceState(true,"Ouvindo… fale a refeição.");
+        clearTimeout(stopTimer);
+        stopTimer=setTimeout(()=>{
+          try{ recognition.stop(); }catch(e){}
+        },8000);
+      };
+
+      recognition.onresult=(event)=>{
+        const result=event.results?.[0]?.[0]?.transcript || "";
+        if(result){
+          const out=registerVoiceInput(result);
+          if(out.type==="exercise"){
+            voiceStatus.textContent="Gasto do treino registrado e meta recalculada.";
+          }else{
+            voiceStatus.textContent=out.ok
+              ?"Refeição registrada e plano recalculado."
+              :"Texto reconhecido. Confira antes de registrar.";
+          }
         }
-      },60000);
+      };
+
+      recognition.onerror=(event)=>{
+        clearTimeout(stopTimer);
+        const map={
+          "not-allowed":"Permita o acesso ao microfone para este site.",
+          "service-not-allowed":"O reconhecimento de voz foi bloqueado pelo Safari.",
+          "no-speech":"Não ouvi nenhuma fala. Toque e tente novamente.",
+          "audio-capture":"Não consegui acessar o microfone.",
+          "aborted":"Reconhecimento interrompido."
+        };
+        setVoiceState(false,map[event.error]||("Erro no microfone: "+event.error));
+      };
+
+      recognition.onend=()=>{
+        clearTimeout(stopTimer);
+        setVoiceState(false,voiceStatus.textContent==="Ouvindo… fale a refeição."
+          ?"Pronto. Toque novamente para falar outra parte."
+          :voiceStatus.textContent);
+        recognition=null;
+      };
+
+      recognition.start();
     }catch(e){
       recognition=null;
-      setVoiceState(false,"Não consegui iniciar o reconhecimento. Recarregue a página e tente novamente.");
+      clearTimeout(stopTimer);
+      setVoiceState(false,"O Safari não conseguiu iniciar o reconhecimento. Recarregue a página e tente novamente.");
     }
   }
-
   voiceBtn.onclick=startVoiceRecognition;
   const exerciseVoiceBtn=document.getElementById("exerciseVoiceBtn");
   if(exerciseVoiceBtn) exerciseVoiceBtn.onclick=startVoiceRecognition;
 }else{
   const noVoice=()=>{
     voiceStatus.textContent="Reconhecimento de voz indisponível neste navegador.";
-    alert("Este navegador não disponibiliza reconhecimento de voz para esta página.");
+    alert("Este navegador não disponibiliza reconhecimento de voz para esta página. Use o Safari normal; em atalhos adicionados à Tela de Início esse recurso pode não estar disponível.");
   };
   voiceBtn.onclick=noVoice;
   const exerciseVoiceBtn=document.getElementById("exerciseVoiceBtn");
   if(exerciseVoiceBtn) exerciseVoiceBtn.onclick=noVoice;
 }
+
 
 const saveExerciseBtn=document.getElementById("saveExercise");
 if(saveExerciseBtn) saveExerciseBtn.onclick=()=>{
@@ -1780,19 +1622,9 @@ if(saveExerciseBtn) saveExerciseBtn.onclick=()=>{
 document.getElementById("estimateBtn").onclick=()=>{
   const text=document.getElementById("mealText").value.trim(); if(!text)return;
   const r=parseMeal(text);
-  if(r.ambiguities?.length){
-    document.getElementById("parseInfo").textContent=
-      "Não registrei: preparo nutricionalmente ambíguo ("+r.ambiguities.join(", ")+"). "+
-      "A Foundation prefere pedir confirmação a registrar uma estimativa potencialmente errada.";
-    return;
-  }
-  if(!r.found.length){
-    document.getElementById("parseInfo").textContent="Não reconheci alimentos suficientes com segurança. Use o lançamento manual.";
-    return;
-  }
+  if(!r.found.length){document.getElementById("parseInfo").textContent="Não reconheci alimentos suficientes. Use o lançamento manual para esta refeição.";return}
   addEntry(text,r.total,"estimate");
-  document.getElementById("parseInfo").textContent=
-    "Reconhecido pela base interna provisória: "+r.found.join(", ")+".";
+  document.getElementById("parseInfo").textContent="Reconhecido: "+r.found.join(", ")+".";
   document.getElementById("mealText").value="";
 }
 document.getElementById("manualBtn").onclick=()=>{
@@ -1820,21 +1652,13 @@ document.getElementById("closeDay").onclick=()=>{
   alert("Dia fechado. Ajustes futuros, quando necessários, usam tendência de vários dias completos.");
 }
 document.getElementById("saveSettings").onclick=()=>{
-  const next={
+  state.settings={
     kcal:parseFloat(document.getElementById("setKcal").value)||2000,
     p:parseFloat(document.getElementById("setProt").value)||170,
     c:parseFloat(document.getElementById("setCarb").value)||198,
     f:parseFloat(document.getElementById("setFat").value)||60,
     exerciseCompPct:Math.max(0,Math.min(100,parseFloat(document.getElementById("setExerciseComp")?.value)||0))
-  };
-  state.settings={...state.settings,...next};
-  const active=dietForDate();
-  if(active){
-    active.kcal=next.kcal; active.p=next.p; active.c=next.c; active.f=next.f;
-    active.updatedAt=new Date().toISOString();
-  }
-  save();render();renderProfileV2();renderReport();
-  alert("Metas atualizadas no ciclo ativo.");
+  };save();render();
 }
 
 
@@ -1873,28 +1697,8 @@ if(downloadReportBtn) downloadReportBtn.onclick=downloadCurrentReport;
 const printReportBtn=document.getElementById("printReport");
 if(printReportBtn) printReportBtn.onclick=()=>{ if(!currentReport) renderReport(); window.print(); };
 
-document.getElementById("resetAll").onclick=async()=>{
-  const msg=cloudUser
-    ?"Apagar os dados nutricionais desta conta na nuvem e neste dispositivo? A conta de login será mantida."
-    :"Apagar os dados nutricionais deste dispositivo?";
-  if(!confirm(msg)) return;
-
-  cloudLoading=true;
-  replaceStateObject(defaultState());
-  ensureInitialDiet();
-  localStorage.setItem(activeStorageKey,JSON.stringify(state));
-  cloudLoading=false;
-
-  if(cloudUser && ldCloud){
-    const {error}=await ldCloud.from("ld_app_states").upsert({
-      user_id:cloudUser.id,
-      state:JSON.parse(JSON.stringify(state)),
-      updated_at:new Date().toISOString()
-    },{onConflict:"user_id"});
-    if(error) return alert("Não foi possível apagar os dados na nuvem: "+error.message);
-  }
-  render();renderProfileV2();renderCheckinsV2();renderReport();
-  alert("Dados nutricionais apagados.");
+document.getElementById("resetAll").onclick=()=>{
+  if(confirm("Apagar todos os registros e ajustes?")){localStorage.removeItem("ld_nutri_state");location.reload()}
 }
 document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
