@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111827">
+<title>Agente Nutricional LD v2</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--txt:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#111827;--soft:#f3f4f6}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt)}
+.wrap{max-width:760px;margin:auto;padding:16px 14px 40px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:12px}
+h1{font-size:25px;margin:5px 0}.sub,.small{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.metric{padding:11px;border:1px solid var(--line);border-radius:13px}.metric b{display:block;font-size:19px;margin-top:4px}
+textarea,input,button{font:inherit}textarea,input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}textarea{min-height:85px}
+button{border:0;border-radius:12px;padding:11px 12px;font-weight:700;cursor:pointer}.primary{width:100%;background:var(--accent);color:#fff;margin-top:8px}
+.secondary{background:var(--soft)}.meal{padding:12px 0;border-bottom:1px solid var(--line)}.meal:last-child{border-bottom:0}
+.mealhead{display:flex;align-items:center;justify-content:space-between;gap:8px}.pill{font-size:11px;background:var(--soft);padding:4px 7px;border-radius:99px}
+.foodplan{margin-top:7px;line-height:1.45;font-size:14px}.actual{font-size:13px;margin-top:6px}.remaining{background:#f8fafc;border-radius:12px;padding:11px;margin-top:10px}
+.row{display:flex;gap:8px}.row>*{flex:1}.note{font-size:12px;color:#4b5563;margin-top:7px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Agente Nutricional LD</h1><div class="sub">Recalcula automaticamente o restante do dia a cada refeição registrada.</div></header>
+
+<div class="card">
+  <div class="grid">
+    <div class="metric"><span class="small">Meta hoje</span><b id="goalK">2000 kcal</b></div>
+    <div class="metric"><span class="small">Consumido</span><b id="usedK">0 kcal</b></div>
+    <div class="metric"><span class="small">Proteína</span><b id="usedP">0 / 170 g</b></div>
+    <div class="metric"><span class="small">Restante</span><b id="leftK">2000 kcal</b></div>
+  </div>
+  <div id="dayMsg" class="remaining"></div>
+</div>
+
+<div class="card">
+  <b>Registrar o que você acabou de comer</b>
+  <div class="small" style="margin:5px 0 8px">Ex.: “2 ovos, 2 fatias de queijo e meio mamão”</div>
+  <textarea id="txt"></textarea>
+  <div class="row">
+    <button class="secondary" onclick="setMeal('cafe')">Café</button>
+    <button class="secondary" onclick="setMeal('almoco')">Almoço</button>
+    <button class="secondary" onclick="setMeal('lanche')">Lanche</button>
+    <button class="secondary" onclick="setMeal('janta')">Janta</button>
+  </div>
+  <input type="hidden" id="slot" value="cafe">
+  <button class="primary" onclick="registerMeal()">Registrar e recalcular</button>
+  <div id="parse" class="note"></div>
+</div>
+
+<div class="card">
+  <b>Plano recalculado de hoje</b>
+  <div id="plan"></div>
+</div>
+
+<div class="card">
+  <b>Correção manual de uma refeição</b>
+  <div class="small" style="margin:5px 0 8px">Use quando a estimativa automática não representar bem a refeição.</div>
+  <div class="row"><input id="mk" type="number" placeholder="kcal"><input id="mp" type="number" placeholder="proteína g"></div>
+  <div class="row" style="margin-top:8px"><input id="mc" type="number" placeholder="carbo g"><input id="mf" type="number" placeholder="gordura g"></div>
+  <button class="primary" onclick="manual()">Substituir refeição selecionada</button>
+</div>
+
+<div class="small">Estimativas variam conforme porção, marca e preparo. O sistema usa o plano-base de ~2.000 kcal e protege a meta proteica; mudanças clínicas, exames, medicações ou sintomas exigem avaliação profissional.</div>
+</div>
+
+<script>
+const targets={k:2000,p:170,c:198,f:60};
+const names={cafe:"Café da manhã",almoco:"Almoço",lanche:"Lanche da tarde",janta:"Janta"};
+const order=["cafe","almoco","lanche","janta"];
+const baseWeights={cafe:.24,almoco:.29,lanche:.19,janta:.28};
+
+const DB=[
+ {keys:["ovo","ovos"],type:"unit",k:72,p:6.3,c:.4,f:4.8},
+ {keys:["fatia de queijo","fatias de queijo","queijo"],type:"unit",k:70,p:5,c:1,f:5},
+ {keys:["pão francês","pao frances","cacetinho","pão cacetinho","pao cacetinho"],type:"unit",k:140,p:4.5,c:28,f:1.5},
+ {keys:["mamão papaya","mamao papaya","mamão","mamao"],type:"mamao",k:150,p:1.8,c:38,f:1},
+ {keys:["banana"],type:"unit",k:90,p:1.1,c:23,f:.3},
+ {keys:["frango","peito de frango"],type:"100g",k:165,p:31,c:0,f:3.6},
+ {keys:["patinho"],type:"100g",k:180,p:28,c:0,f:7},
+ {keys:["peixe"],type:"100g",k:130,p:26,c:0,f:3},
+ {keys:["arroz"],type:"100g",k:130,p:2.7,c:28,f:.3},
+ {keys:["feijão","feijao"],type:"100g",k:76,p:4.8,c:13.6,f:.5},
+ {keys:["batata"],type:"100g",k:87,p:1.9,c:20,f:.1},
+ {keys:["aveia"],type:"100g",k:389,p:16.9,c:66.3,f:6.9},
+ {keys:["azeite"],type:"10g",k:90,p:0,c:0,f:10},
+ {keys:["maçã","maca"],type:"unit",k:80,p:.4,c:21,f:.3},
+ {keys:["laranja"],type:"unit",k:65,p:1.2,c:16,f:.2},
+ {keys:["vinho"],type:"glass",k:125,p:0,c:4,f:0}
+];
+let S=JSON.parse(localStorage.getItem("LDnutriV2")||"null")||{date:new Date().toISOString().slice(0,10),actual:{}};
+if(S.date!==new Date().toISOString().slice(0,10))S={date:new Date().toISOString().slice(0,10),actual:{}};
+function save(){localStorage.setItem("LDnutriV2",JSON.stringify(S))}
+function norm(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function amountBefore(t,key){
+ let a=norm(t), k=norm(key), i=a.indexOf(k), pre=a.slice(Math.max(0,i-24),i);
+ let m=pre.match(/(\d+(?:[.,]\d+)?)\s*(g|ml|fatia|fatias)?\s*$/);
+ if(m)return {n:+m[1].replace(",","."),u:m[2]||""};
+ if(/meio\s*(de\s*)?$/.test(pre)||/1\/2\s*(de\s*)?$/.test(pre))return {n:.5,u:"frac"};
+ if(/um quarto\s*(de\s*)?$/.test(pre)||/1\/4\s*(de\s*)?$/.test(pre))return {n:.25,u:"frac"};
+ return null;
+}
+function parseMeal(t){
+ let x={k:0,p:0,c:0,f:0},found=[];
+ for(const d of DB){
+   let key=d.keys.find(q=>norm(t).includes(norm(q))); if(!key)continue;
+   let q=amountBefore(t,key), mult=1;
+   if(d.type==="unit") mult=q?q.n:1;
+   if(d.type==="100g") mult=q&&q.u==="g"?q.n/100:1;
+   if(d.type==="10g") mult=q&&q.u==="g"?q.n/10:1;
+   if(d.type==="glass") mult=q?q.n:1;
+   if(d.type==="mamao") mult=q&&q.u==="frac"?q.n:(q&&q.u==="g"?q.n/350:.5);
+   for(const z of ["k","p","c","f"])x[z]+=d[z]*mult;
+   found.push(key);
+ }
+ return {x,found};
+}
+function setMeal(s){document.getElementById("slot").value=s;document.getElementById("parse").textContent="Registrando: "+names[s]}
+function registerMeal(){
+ let t=document.getElementById("txt").value.trim(); if(!t)return;
+ let r=parseMeal(t); if(!r.found.length){document.getElementById("parse").textContent="Não reconheci o suficiente. Use a correção manual.";return}
+ let s=document.getElementById("slot").value; S.actual[s]={...r.x,desc:t}; save();document.getElementById("txt").value="";
+ document.getElementById("parse").textContent="Registrado em "+names[s]+": "+r.found.join(", ")+". Restante do dia recalculado.";render();
+}
+function manual(){
+ let s=document.getElementById("slot").value;
+ S.actual[s]={k:+document.getElementById("mk").value||0,p:+document.getElementById("mp").value||0,c:+document.getElementById("mc").value||0,f:+document.getElementById("mf").value||0,desc:"Lançamento manual"};
+ save();render();
+}
+function sum(){
+ let x={k:0,p:0,c:0,f:0};
+ Object.values(S.actual).forEach(a=>{for(const z of ["k","p","c","f"])x[z]+=a[z]||0});return x;
+}
+function remainingSlots(){return order.filter(s=>!S.actual[s])}
+function allocations(){
+ let used=sum(), rem={k:Math.max(0,targets.k-used.k),p:Math.max(0,targets.p-used.p),c:Math.max(0,targets.c-used.c),f:Math.max(0,targets.f-used.f)};
+ let slots=remainingSlots(), wsum=slots.reduce((a,s)=>a+baseWeights[s],0), a={};
+ slots.forEach(s=>{
+   let w=baseWeights[s]/wsum;
+   // Proteína é distribuída com um piso prático e sem jogar tudo na última refeição
+   a[s]={k:rem.k*w,p:rem.p*w,c:rem.c*w,f:rem.f*w};
+ });
+ return {used,rem,a};
+}
+function foodSuggestion(s,m){
+ let k=Math.round(m.k), p=Math.round(m.p), c=Math.round(m.c), f=Math.round(m.f);
+ if(s==="cafe")return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Ex.: ovos + pão/aveia + fruta; ajuste queijo/claras conforme a proteína e gordura restantes.`;
+ if(s==="almoco")return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Priorize ~160–200 g de proteína magra; complete com arroz/batata + feijão/legumes e ajuste azeite conforme a gordura disponível.`;
+ if(s==="lanche")return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Faça uma fonte proteica + fruta e uma porção de pão/aveia conforme o carboidrato restante.`;
+ return `Meta aproximada: ${k} kcal • P ${p} g • C ${c} g • G ${f} g. Priorize ~180–200 g de proteína magra; use batata/arroz conforme carboidratos restantes e controle o azeite conforme gordura disponível.`;
+}
+function render(){
+ let {used,rem,a}=allocations();
+ document.getElementById("goalK").textContent=targets.k+" kcal";
+ document.getElementById("usedK").textContent=Math.round(used.k)+" kcal";
+ document.getElementById("usedP").textContent=Math.round(used.p)+" / "+targets.p+" g";
+ document.getElementById("leftK").textContent=Math.round(targets.k-used.k)+" kcal";
+ let over=used.k-targets.k;
+ document.getElementById("dayMsg").innerHTML=over>0?`Você passou aproximadamente <b>${Math.round(over)} kcal</b> da meta. O agente não vai zerar comida nem fazer compensação extrema; vai priorizar proteína e manter o restante do dia mais leve.`:
+ `Faltam aproximadamente <b>${Math.round(rem.k)} kcal</b>, <b>${Math.round(rem.p)} g de proteína</b>, <b>${Math.round(rem.c)} g de carboidratos</b> e <b>${Math.round(rem.f)} g de gorduras</b> para hoje.`;
+ document.getElementById("plan").innerHTML=order.map(s=>{
+   let ac=S.actual[s];
+   if(ac)return `<div class="meal"><div class="mealhead"><b>${names[s]}</b><span class="pill">feito</span></div><div class="actual">${ac.desc}<br><span class="small">${Math.round(ac.k)} kcal • P ${Math.round(ac.p)} • C ${Math.round(ac.c)} • G ${Math.round(ac.f)}</span></div></div>`;
+   let m=a[s]||{k:0,p:0,c:0,f:0};
+   return `<div class="meal"><div class="mealhead"><b>${names[s]}</b><span class="pill">recalculado</span></div><div class="foodplan">${foodSuggestion(s,m)}</div></div>`;
+ }).join("");
+}
+render();
+</script>
+</body>
+</html>
